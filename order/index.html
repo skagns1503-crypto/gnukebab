@@ -410,7 +410,7 @@ function HOMEBODY(logged,cards){
  '<div class="hero"><div class="brand">'+esc(T(BRAND.name_ko,BRAND.name_en))+'</div><div class="tagline">'+esc(T(BRAND.tag_ko,BRAND.tag_en))+'</div><p>'+esc(T(BRAND.sub_ko,BRAND.sub_en))+'</p>'+
  '<ul class="facts">'+(saleLine()?'<li>'+saleLine()+'</li>':'')+'<li>'+T('배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'까지 주문','Order by '+hourLabel()+', '+CFG.deadlineDaysBefore+' days ahead')+'</li><li>'+T('계좌이체 · 현금영수증','Bank transfer · cash receipt')+'</li></ul></div>'+
  '<div class="auth" style="margin-top:2px">'+
- '<button type="button" class="btn primary" data-act="go" data-to="'+(logged?'where':'login')+'">'+T('주문하기','Start an order')+'</button>'+
+ '<button type="button" class="btn primary" data-act="go" data-to="'+(logged||S.sess?'where':'login')+'">'+T('주문하기','Start an order')+'</button>'+
  ((logged||tokens().length)?'<button type="button" class="btn" data-act="my">'+T('내 주문','My orders')+'</button>':'')+
  '</div>'+
  '<div class="lbl" style="margin:8px 0 -4px">'+T('단체 메뉴','Group menu')+'</div><div class="mgrid">'+cards+'</div>';}
