@@ -85,6 +85,12 @@ a.btn{text-decoration:none}
 .toast.on{opacity:1;transform:none}
 .phone.busy .screen,.phone.busy .foot,.phone.busy .appbar{pointer-events:none;opacity:.6}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* 09-27(8) 꼭 읽어야 하는 안내 = 「확인」 누를 때까지 떠 있는 창(아래 토스트는 긴 화면에서 못 보고 지나감 — 사장님 「팝업도 없었다」) */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px;z-index:50}
+.modal[hidden]{display:none}
+.modal .box{background:var(--panel);color:var(--ink);border-radius:16px;padding:20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;font-size:15px;line-height:1.55;box-shadow:var(--shadow)}
+#modal-msg{white-space:pre-line}
+.otp{max-width:9.5em;letter-spacing:.35em;font-size:18px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
 
 /* 달력 — 사장님 화면 */
 .cal{display:flex;flex-direction:column;gap:8px}
@@ -180,10 +186,14 @@ a.tel{color:var(--pine);font-weight:700;text-decoration:none}
 .pc{height:440px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
 
 /* menu */
-.item{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+/* 09-27(8) 사장님 「메뉴 사진 크게 — 한 화면 4개여도 됨」 → 54px → 폰 116px · 넓은 화면 150px */
+.item{display:grid;grid-template-columns:116px minmax(0,1fr);gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+@media (min-width:480px){.item{grid-template-columns:150px minmax(0,1fr)}.thumb{width:150px!important;height:150px!important}}
 .item:last-child{border-bottom:0}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.thumb{width:54px;height:54px;border-radius:10px;overflow:hidden;background:repeating-linear-gradient(135deg,var(--pine-soft) 0 6px,var(--panel2) 6px 12px);display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center}
+.item .ds{font-size:12.5px;line-height:1.45;color:var(--muted);margin-top:3px}
+.mcard .mtxt .msub{font-size:12px;line-height:1.4}
+.thumb{width:116px;height:116px;border-radius:12px;overflow:hidden;background:repeating-linear-gradient(135deg,var(--pine-soft) 0 6px,var(--panel2) 6px 12px);display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center}
 .item .nm{font-weight:700}
 .item .pr{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .step{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px}
@@ -260,6 +270,7 @@ a.tel{color:var(--pine);font-weight:700;text-decoration:none}
   <div class="foot" id="foot"></div>
   <div class="toast" id="toast" role="status"></div>
 </div>
+<div class="modal" id="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-msg" hidden><div class="box"><div id="modal-msg"></div><button type="button" class="btn primary" id="modal-ok">확인</button></div></div>
 
 <script>
 (function(){
@@ -276,7 +287,7 @@ function applyBoot(b){
   BRAND=b.brand;CFG=b.st;CAP=CFG.cap;CONTACT=b.contact||{};
   CITIES=b.cities.map(function(c){return {id:c.id,ko:c.name_ko,en:c.name_en,area:c.area,minAmount:c.minAmount,min:c.min,fee:c.fee,match:c.match};})
     .concat([{id:'other',ko:'목록에 없는 곳',en:'Somewhere else',out:true}]);
-  MENU=b.menu.map(function(m){return {id:m.id,ko:m.name_ko,en:m.name_en,price:m.price,food:m.food,note_ko:m.note_ko,note_en:m.note_en};});
+  MENU=b.menu.map(function(m){return {id:m.id,ko:m.name_ko,en:m.name_en,price:m.price,food:m.food,note_ko:m.note_ko,note_en:m.note_en,desc_ko:m.desc_ko||'',desc_en:m.desc_en||''};});
   TIMES={lunch:CFG.lunchTimes,dinner:CFG.dinnerTimes};
   AVAIL=b.avail;OFFSET=b.nowMs-Date.now();
 }
@@ -387,13 +398,23 @@ function setLogin(sess,user){S.sess=sess;lsSet('sess',sess);S.user={name:user.na
 var SCR={};
 /* 4.8 홈 — 사장님 확정: 메뉴 사진 + 주문하기 + 내 주문 + 로그인/로그아웃 (09-26) */
 var IMGB=EXEC?'img/':'https://gnukebab.co.kr/order/img/';
-var PHOTO={lunchbox:1,kebab:1,ricebowl:1,snack:1,drink:1,fries:1,cheesefries:1};
+/* 09-27(8) 사장님: 케밥·라이스보울·스낵팩 = 비프·치킨·믹스, 캔 4가지로 나눔 — 사진은 메뉴마다 한 장(build_site.py ORDER_PHOTOS) */
+var PHOTO={lunchbox:1,kebab_beef:1,kebab_chicken:1,kebab_mix:1,ricebowl_beef:1,ricebowl_chicken:1,ricebowl_mix:1,snack_beef:1,snack_chicken:1,snack_mix:1,
+ drink_pepsi:1,drink_pepsi_zero_lime:1,drink_sprite:1,drink_cider_zero:1,fries:1,cheesefries:1};
+/* 홈 카드는 묶음으로 — [앞글자, 이름, 영어, 밑줄 설명, 사진] (앞글자_ 로 시작하는 메뉴를 한 카드에) */
+var HOMEG=[['lunchbox'],['kebab','케밥','Kebab wraps','비프 · 치킨 · 믹스','Beef · Chicken · Mixed','kebab_beef'],
+ ['ricebowl','라이스보울','Rice bowls','비프 · 치킨 · 믹스','Beef · Chicken · Mixed','ricebowl_beef'],['snack','할랄 스낵팩','Halal snack packs','비프 · 치킨 · 믹스','Beef · Chicken · Mixed','snack_beef'],
+ ['drink','캔음료','Canned drinks','펩시 · 펩시 제로 라임 · 스프라이트 · 칠성사이다 제로','Pepsi · Pepsi Zero Lime · Sprite · Chilsung Cider Zero','drink'],['fries'],['cheesefries']];
 SCR.start=function(){
  var logged=S.user&&(S.sess||!BOOT.smsLive);
- var cards=MENU.filter(function(m){return PHOTO[m.id];}).map(function(m){
-   var note=T(m.note_ko||'',m.note_en||'');
-   return '<div class="mcard"><img src="'+IMGB+m.id+'.jpg" alt="'+esc(iname(m))+'" loading="lazy" onerror="this.style.display=\'none\'">'+
-    '<div class="mtxt"><b>'+esc(iname(m))+'</b><span>'+(m.price?won(m.price):T('가격 미정','Price TBD'))+(note?' '+esc(note):'')+EX()+'</span></div></div>';}).join('');
+ var cards=HOMEG.map(function(g){
+   var ms=MENU.filter(function(m){return g.length===1?m.id===g[0]:m.id.indexOf(g[0]+'_')===0;});if(!ms.length)return '';
+   var ps=ms.map(function(m){return m.price;}).filter(Boolean),lo=Math.min.apply(null,ps),hi=Math.max.apply(null,ps);
+   var nm=g.length===1?iname(ms[0]):T(g[1],g[2]),img=g.length===1?g[0]:g[5];
+   var pr=!ps.length?T('가격 미정','Price TBD'):lo===hi?won(lo):won(lo)+' ~ '+won(hi);
+   var sub=g.length===1?T(ms[0].desc_ko||'',ms[0].desc_en||''):T(g[3],g[4]);
+   return '<div class="mcard"><img src="'+IMGB+img+'.jpg" alt="'+esc(nm)+'" loading="lazy" onerror="this.style.display=\'none\'">'+
+    '<div class="mtxt"><b>'+esc(nm)+'</b><span>'+pr+EX()+'</span>'+(sub?'<span class="msub">'+esc(sub)+'</span>':'')+'</div></div>';}).join('');
  return {bar:false,body:HOMEBODY(logged,cards)};};
 function authBox(forOrder){
  return '<div class="auth">'+
@@ -427,7 +448,7 @@ SCR.login=function(){var F=S.form;return {title:T('로그인','Sign in'),back:tr
  '<p class="muted small" style="margin:6px 0 0">'+T('또는 쓰시던 계정으로 — 같은 휴대폰 번호면 한 회원으로 묶입니다.','Or use an account you have — the same phone number keeps you as one member.')+'</p>'+authBox(true)};};
 function otpBlock(){var F=S.form,ph=F['f-phone']||'010-',otp='';
  if(S.verified)otp='<div class="note ok small">✓ '+T('휴대폰 인증이 끝났습니다.','Phone number verified.')+'</div>';
- else if(S.codeSent)otp='<div class="field"><label for="f-code">'+T('인증번호 6자리','6-digit code')+'</label><div class="row"><input class="input grow" id="f-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" value="'+esc(F['f-code']||'')+'"><button type="button" class="btn sm primary" data-act="verify">'+T('확인','Verify')+'</button></div><span class="small muted" id="otp-timer"></span></div>';
+ else if(S.codeSent)otp='<div class="field"><label for="f-code">'+T('인증번호 6자리','6-digit code')+'</label><div class="row"><input class="input otp" id="f-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" oninput="this.value=this.value.replace(/\\D/g,\'\').slice(0,6)" value="'+esc(String(F['f-code']||'').replace(/\D/g,'').slice(0,6))+'"><button type="button" class="btn sm primary" data-act="verify">'+T('확인','Verify')+'</button></div><span class="small muted" id="otp-timer"></span></div>';
  return '<div class="field"><label for="f-phone">'+T('휴대폰 번호','Mobile number')+'</label><div class="row"><input class="input grow" id="f-phone" inputmode="tel" autocomplete="tel" value="'+esc(ph)+'"'+(S.verified?' readonly':'')+'>'+(S.verified?'':'<button type="button" class="btn sm" data-act="code">'+(S.codeSent?T('다시 받기','Resend'):T('인증번호 받기','Send code'))+'</button>')+'</div></div>'+otp;}
 function idpwFields(needId){var F=S.form;
  return (needId?'<div class="field"><label for="f-id">'+T('아이디','ID')+'</label><input class="input" id="f-id" autocomplete="username" autocapitalize="off" value="'+esc(F['f-id']||'')+'" placeholder="'+T('영문 소문자·숫자 4~20자','4–20 lowercase letters or digits')+'"></div>':'')+
@@ -449,7 +470,7 @@ SCR.signup=function(){
  var nm=F['f-name']||'',gp=F['f-group']||'';
  var PN={google:'구글',kakao:'카카오',naver:'네이버'};
  return {title:T('회원가입','Sign up'),back:true,body:
- (S.social?'<div class="note ok small">✓ '+T(PN[S.social]+'로 로그인했습니다. 배달 연락용 휴대폰 번호만 확인해 주세요.','Signed in with '+S.social.charAt(0).toUpperCase()+S.social.slice(1)+'. Please confirm your mobile number for delivery.')+'</div>':'')+
+ (S.social?'<div class="note ok small">✓ '+T(PN[S.social]+'로 처음 오셨습니다. 휴대폰 번호 인증 한 번이면 가입이 끝납니다(아이디·비밀번호는 필요 없습니다). 이미 가입하신 번호면 그 회원으로 로그인됩니다.','First time with '+S.social.charAt(0).toUpperCase()+S.social.slice(1)+'. Verify your mobile number once to finish (no ID or password needed). If this number already has an account, we sign you in to it.')+'</div>':'')+
  '<p class="muted small" style="margin:0">'+T('주문하신 분과 배달 받을 연락처를 확인하는 데만 씁니다.','Used only to contact you about your order and delivery.')+'</p>'+
  '<div class="field"><label for="f-name">'+T('이름','Name')+'</label><input class="input" id="f-name" autocomplete="name" value="'+esc(nm)+'" placeholder="'+T('홍길동','Your name')+'"></div>'+
  '<div class="field"><label for="f-group">'+T('단체 이름','Organization')+'</label><input class="input" id="f-group" value="'+esc(gp)+'" placeholder="'+T('예: ○○대학교 유학생회','e.g. ○○ Univ. International Student Association')+'"></div>'+
@@ -504,8 +525,9 @@ function pointsBox(k){
 
 SCR.menu=function(){
  var c=city(S.city),k=calc(S.qty,S.city),bl=block(),a=avail(S.date),left=a?a.left:0,rem=Math.max(0,c.minAmount-k.goods);
- var rows=MENU.map(function(m){var q=S.qty[m.id]||0,note=T(m.note_ko,m.note_en);
-   return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+
+ /* 09-27(8) 사장님: 사진 크게(한 화면 4개여도 됨) + 메뉴 이름 밑 한 줄 설명 */
+ var rows=MENU.map(function(m){var q=S.qty[m.id]||0,note=T(m.note_ko,m.note_en),ds=T(m.desc_ko,m.desc_en);
+   return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div class="itx"><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+(ds?'<div class="ds">'+esc(ds)+'</div>':'')+
    '<div class="step"><button type="button" data-act="q" data-id="'+m.id+'" data-d="-1" aria-label="'+T('하나 빼기','Remove one')+'">−</button>'+
    '<input class="q qin" type="text" inputmode="numeric" data-qty="'+m.id+'" id="q-'+m.id+'" value="'+esc(S.qraw[m.id]!=null?S.qraw[m.id]:q)+'" aria-label="'+T(esc(L(m))+' 개수 직접 넣기',esc(L(m))+' quantity')+'">'+
    '<button type="button" data-act="q" data-id="'+m.id+'" data-d="1" aria-label="'+T('하나 더','Add one')+'">+</button><button type="button" data-act="q" data-id="'+m.id+'" data-d="10">+10</button>'+(m.food?'<span class="left'+(rem?'':' ok')+'">'+(rem?T('최소까지 약 '+Math.ceil(rem/(m.price*(1-CFG.discountRate)))+'개',Math.ceil(rem/(m.price*(1-CFG.discountRate)))+' more to min.'):T('✓ 최소 채움','✓ minimum met'))+'</span>':'')+'</div></div></div>';}).join('');
@@ -790,6 +812,7 @@ document.addEventListener('focusin',function(e){
 });
 function go(to){S.hist.push(S.screen);S.screen=to;render();}
 function home(to){S.hist=[];S.screen=to;render();}
+function notice(m){var d=document.getElementById('modal'),b=document.getElementById('modal-ok');document.getElementById('modal-msg').textContent=m;b.textContent=T('확인','OK');d.hidden=false;b.onclick=function(){d.hidden=true;};setTimeout(function(){b.focus();},50);}
 var tt;function toast(m,ms){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(hideToast,ms||2600);}
 function hideToast(){document.getElementById('toast').classList.remove('on');}
 function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
@@ -836,7 +859,8 @@ document.addEventListener('click',function(e){
      if(r.dry)toast(T('(시험 모드) 문자 대신 여기 표시 — 인증번호 '+r.code,'(Test mode) Your SMS code would be '+r.code),8000);
      else toast(T('문자로 인증번호를 보냈습니다.','We texted you a code.'),3000);});return;}
  if(a==='verify'){if(Date.now()-S.codeAt>300000){toast(T('시간이 지났습니다. 다시 받아 주세요.','Code expired. Please resend.'));return;}
-   call('apiVerifyCode',{phone:S.form['f-phone'],code:(S.form['f-code']||'').trim(),sess:S.sess},T('확인하는 중…','Checking…')).then(function(r){
+   var cd=String(S.form['f-code']||'').replace(/\D/g,'');if(cd.length!==6){toast(T('인증번호 6자리를 넣어 주세요.','Enter the 6-digit code.'));return;}
+   call('apiVerifyCode',{phone:S.form['f-phone'],code:cd,sess:S.sess},T('확인하는 중…','Checking…')).then(function(r){
      if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),4000);return;}
      S.vt=r.vt;S.verified=true;
      /* 09-27 이미 회원인 번호 → 가입 화면 없이 바로 로그인(소셜로 막 들어온 경우 그 회원에 묶임) */
@@ -846,8 +870,9 @@ document.addEventListener('click',function(e){
        var howEn={google:'Google',kakao:'Kakao',naver:'Naver',phone:'your phone number'}[r.user.provider]||'';
        var was=S.social;
        setLogin(r.sess,r.user);S.social='';S.verified=false;S.codeSent=false;clearPw();home('where');
-       toast(T('이미 '+how+'로 가입된 회원입니다'+(r.user.loginId?'(아이디 '+r.user.loginId+')':'')+'. 그 회원으로 로그인했습니다.'+(was&&was!==r.user.provider?' 다음부터는 '+{google:'구글',kakao:'카카오',naver:'네이버'}[was]+'로 들어오셔도 같은 회원입니다.':''),
-         'You already have an account (joined with '+howEn+(r.user.loginId?', ID '+r.user.loginId:'')+'). You are now signed in to it.'),8000);loadMine(true);return;}
+       /* 09-27(8) 사장님 「안내는 해 줘야지」 — 토스트는 못 보고 지나가서 「확인」 창으로 */
+       notice(T('이 번호는 이미 '+how+'로 가입된 회원입니다'+(r.user.loginId?'(아이디 '+r.user.loginId+')':'')+'.\n새로 가입하지 않고 그 회원으로 로그인했습니다.'+(was&&was!==r.user.provider?'\n다음부터는 '+{google:'구글',kakao:'카카오',naver:'네이버'}[was]+'로 들어오셔도 같은 회원입니다.':''),
+         'This number already has an account (joined with '+howEn+(r.user.loginId?', ID '+r.user.loginId:'')+').\nWe signed you in to it instead of creating a new one.'));loadMine(true);return;}
      if(r.known){if(!(S.form['f-name']||'').trim())S.form['f-name']=r.known.name;if(!(S.form['f-group']||'').trim())S.form['f-group']=r.known.group;if(r.known.mkt)S.form['c-mkt']=true;S.form['c-req']=true;}
      rerender();toast(r.known?T('인증됐습니다. 전에 가입하신 정보를 불러왔습니다.','Verified. We loaded your saved details.'):T('인증됐습니다.','Verified.'));});return;}
  if(a==='signup'){if(!S.verified)return;if(!(S.form['f-name']||'').trim()){toast(T('이름을 넣어 주세요.','Please enter your name.'));return;}
@@ -971,7 +996,7 @@ function startApp(){
  if(ROLE==='customer'&&AU){
   if(AU.sess){S.sess=AU.sess;lsSet('sess',AU.sess);
     if(AU.user.needPhone){S.social=AU.provider;S.form['f-name']=AU.user.name||'';S.screen='signup';S.hist=['start'];}
-    else{setLogin(AU.sess,AU.user);var gw=null;try{gw=sessionStorage.getItem('go');sessionStorage.removeItem('go');}catch(e){}if(gw==='where'){S.screen='where';S.hist=['start'];}}}
+    else{setLogin(AU.sess,AU.user);if(AU.linked)setTimeout(function(){var PK={google:'구글',kakao:'카카오',naver:'네이버',phone:'휴대폰 번호'},PE={google:'Google',kakao:'Kakao',naver:'Naver',phone:'phone number'};notice(T('이미 '+(PK[AU.user.provider]||'')+'로 가입된 회원입니다'+(AU.user.loginId?'(아이디 '+AU.user.loginId+')':'')+'.\n'+(PK[AU.provider]||'')+'로 들어오셔도 새로 가입되지 않고 같은 회원으로 로그인됩니다.','You already have an account (joined with '+(PE[AU.user.provider]||'')+').\nSigning in with '+(PE[AU.provider]||'')+' takes you to the same account.'));},300);var gw=null;try{gw=sessionStorage.getItem('go');sessionStorage.removeItem('go');}catch(e){}if(gw==='where'){S.screen='where';S.hist=['start'];}}}
   else if(AU.err!=='state')setTimeout(function(){toast(AU.err==='cancel'?T('로그인을 취소하셨습니다.','Sign-in was cancelled.'):T('로그인하지 못했습니다. 잠시 뒤 다시 해 주세요.','Sign-in failed. Please try again.'),4500);},300);
  }
  /* 이 기기의 로그인 표가 아직 살아 있나(지웠거나 기한이 지났으면 가입 정보를 비운다) */
