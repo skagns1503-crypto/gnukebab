@@ -2,3 +2,5 @@ User-agent: *
 Allow: /
 
 Sitemap: https://gnukebab.co.kr/sitemap.xml
+
+#DaumWebMasterTool:3eddb9b0631c6f554fce5ada2cbdf2d7d20c5531712cbeb7f396bab0de8cd1ce:8NlEA5zh8WXgoRgf+MLlog==
