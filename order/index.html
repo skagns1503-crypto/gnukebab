@@ -397,7 +397,6 @@ SCR.start=function(){
  return {bar:false,body:HOMEBODY(logged,cards)};};
 function authBox(forOrder){
  return '<div class="auth">'+
-  '<button type="button" class="btn" data-act="go" data-to="signup">'+T('휴대폰 번호로 가입 · 로그인','Sign up / log in with phone number')+'</button>'+
   ['Google','Kakao','Naver'].map(function(p){var k=p.toLowerCase(),u=(BOOT.oauth||{})[k],lb=T({Google:'구글',Kakao:'카카오',Naver:'네이버'}[p]+'로 계속하기','Continue with '+p);
     if(u)return '<a class="btn social '+k+'" href="'+esc(u)+'"'+(forOrder?' onclick="try{sessionStorage.setItem(\'go\',\'where\')}catch(e){}"':'')+' target="_top" rel="noopener noreferrer" referrerpolicy="no-referrer">'+lb+'</a>';
     return '<button type="button" class="btn social '+k+'" data-act="social">'+lb+' <span class="soon">'+T('· 준비 중','· coming soon')+'</span></button>';}).join('')+
@@ -417,22 +416,44 @@ function HOMEBODY(logged,cards){
  '</div>'+
  '<div class="lbl" style="margin:8px 0 -4px">'+T('단체 메뉴','Group menu')+'</div><div class="mgrid">'+cards+'</div>';}
 /* 09-27 사장님: 주문은 로그인·가입 먼저 */
-SCR.login=function(){return {title:T('로그인','Sign in'),back:true,body:
- '<h2 class="h">'+T('로그인하고 주문하기','Sign in to order')+'</h2><p class="muted small" style="margin:0">'+T('처음이시면 가입부터 — 휴대폰 번호나 구글·카카오·네이버로 1분이면 끝납니다.','New here? Sign up with your phone number or Google, Kakao or Naver — it takes a minute.')+'</p>'+authBox(true)};};
+/* 09-27 사장님: 아이디·비밀번호 가입 추가 · 회원은 한 사람에 하나(같은 휴대폰 번호면 소셜도 같은 회원) */
+SCR.login=function(){var F=S.form;return {title:T('로그인','Sign in'),back:true,body:
+ '<h2 class="h">'+T('로그인하고 주문하기','Sign in to order')+'</h2>'+
+ '<div class="field"><label for="f-lid">'+T('아이디','ID')+'</label><input class="input" id="f-lid" autocomplete="username" autocapitalize="off" value="'+esc(F['f-lid']||'')+'"></div>'+
+ '<div class="field"><label for="f-lpw">'+T('비밀번호','Password')+'</label><input class="input" id="f-lpw" type="password" autocomplete="current-password" value=""></div>'+
+ '<div class="auth"><button type="button" class="btn primary" data-act="loginpw">'+T('로그인','Sign in')+'</button>'+
+ '<button type="button" class="btn" data-act="go" data-to="signup">'+T('회원가입','Sign up')+'</button>'+
+ '<button type="button" class="link small" data-act="go" data-to="findpw" style="align-self:center">'+T('아이디·비밀번호 찾기 (휴대폰 인증)','Find ID / reset password (phone)')+'</button></div>'+
+ '<p class="muted small" style="margin:6px 0 0">'+T('또는 쓰시던 계정으로 — 같은 휴대폰 번호면 한 회원으로 묶입니다.','Or use an account you have — the same phone number keeps you as one member.')+'</p>'+authBox(true)};};
+function otpBlock(){var F=S.form,ph=F['f-phone']||'010-',otp='';
+ if(S.verified)otp='<div class="note ok small">✓ '+T('휴대폰 인증이 끝났습니다.','Phone number verified.')+'</div>';
+ else if(S.codeSent)otp='<div class="field"><label for="f-code">'+T('인증번호 6자리','6-digit code')+'</label><div class="row"><input class="input grow" id="f-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" value="'+esc(F['f-code']||'')+'"><button type="button" class="btn sm primary" data-act="verify">'+T('확인','Verify')+'</button></div><span class="small muted" id="otp-timer"></span></div>';
+ return '<div class="field"><label for="f-phone">'+T('휴대폰 번호','Mobile number')+'</label><div class="row"><input class="input grow" id="f-phone" inputmode="tel" autocomplete="tel" value="'+esc(ph)+'"'+(S.verified?' readonly':'')+'>'+(S.verified?'':'<button type="button" class="btn sm" data-act="code">'+(S.codeSent?T('다시 받기','Resend'):T('인증번호 받기','Send code'))+'</button>')+'</div></div>'+otp;}
+function idpwFields(needId){var F=S.form;
+ return (needId?'<div class="field"><label for="f-id">'+T('아이디','ID')+'</label><input class="input" id="f-id" autocomplete="username" autocapitalize="off" value="'+esc(F['f-id']||'')+'" placeholder="'+T('영문 소문자·숫자 4~20자','4–20 lowercase letters or digits')+'"></div>':'')+
+ '<div class="field"><label for="f-pw">'+T('비밀번호','Password')+'</label><input class="input" id="f-pw" type="password" autocomplete="new-password" value="'+esc(F['f-pw']||'')+'" placeholder="'+T('8자 이상','At least 8 characters')+'"></div>'+
+ '<div class="field"><label for="f-pw2">'+T('비밀번호 확인','Confirm password')+'</label><input class="input" id="f-pw2" type="password" autocomplete="new-password" value="'+esc(F['f-pw2']||'')+'"></div>';}
+function idpwErr(needId){var F=S.form,id=(F['f-id']||'').trim().toLowerCase(),pw=F['f-pw']||'';
+ if(needId&&!/^[a-z0-9_]{4,20}$/.test(id))return T('아이디는 영문 소문자·숫자·밑줄(_)로 4~20자입니다.','ID: 4–20 lowercase letters, digits or _.');
+ if(pw.length<8)return T('비밀번호는 8자 이상입니다.','Password must be at least 8 characters.');
+ if(pw!==(F['f-pw2']||''))return T('비밀번호 확인이 다릅니다.','Passwords do not match.');return '';}
+function clearPw(){S.form['f-pw']='';S.form['f-pw2']='';S.form['f-lpw']='';}
+/* 아이디 찾기·비밀번호 새로 — 휴대폰 인증하면 그 자리에서 로그인도 된다 */
+SCR.findpw=function(){var K=S.known;return {title:T('아이디·비밀번호 찾기','Find ID / reset password'),back:true,body:
+ '<p class="muted small" style="margin:0">'+T('가입하신 휴대폰 번호로 인증해 주세요.','Verify the phone number you signed up with.')+'</p>'+otpBlock()+
+ (S.verified&&K?'<div class="note ok small">'+(K.loginId?T('아이디: ','Your ID: ')+'<b>'+esc(K.loginId)+'</b>':T('아이디가 아직 없습니다 — 아래에서 정해 주세요.','No ID yet — choose one below.'))+'</div>'+idpwFields(!K.loginId):''),
+ foot:S.verified&&K?'<button type="button" class="btn primary" data-act="resetpw">'+T('비밀번호 저장하고 로그인','Save password and sign in')+'</button>':''};};
 
 SCR.signup=function(){
  var F=S.form;
- var nm=F['f-name']||'',gp=F['f-group']||'',ph=F['f-phone']||'010-';
- var otp='';
- if(S.verified)otp='<div class="note ok small">✓ '+T('휴대폰 인증이 끝났습니다.','Phone number verified.')+'</div>';
- else if(S.codeSent)otp='<div class="field"><label for="f-code">'+T('인증번호 6자리','6-digit code')+'</label><div class="row"><input class="input grow" id="f-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" value="'+esc(F['f-code']||'')+'"><button type="button" class="btn sm primary" data-act="verify">'+T('확인','Verify')+'</button></div><span class="small muted" id="otp-timer"></span></div>';
+ var nm=F['f-name']||'',gp=F['f-group']||'';
  var PN={google:'구글',kakao:'카카오',naver:'네이버'};
  return {title:T('회원가입','Sign up'),back:true,body:
  (S.social?'<div class="note ok small">✓ '+T(PN[S.social]+'로 로그인했습니다. 배달 연락용 휴대폰 번호만 확인해 주세요.','Signed in with '+S.social.charAt(0).toUpperCase()+S.social.slice(1)+'. Please confirm your mobile number for delivery.')+'</div>':'')+
  '<p class="muted small" style="margin:0">'+T('주문하신 분과 배달 받을 연락처를 확인하는 데만 씁니다.','Used only to contact you about your order and delivery.')+'</p>'+
  '<div class="field"><label for="f-name">'+T('이름','Name')+'</label><input class="input" id="f-name" autocomplete="name" value="'+esc(nm)+'" placeholder="'+T('홍길동','Your name')+'"></div>'+
  '<div class="field"><label for="f-group">'+T('단체 이름','Organization')+'</label><input class="input" id="f-group" value="'+esc(gp)+'" placeholder="'+T('예: ○○대학교 유학생회','e.g. ○○ Univ. International Student Association')+'"></div>'+
- '<div class="field"><label for="f-phone">'+T('휴대폰 번호','Mobile number')+'</label><div class="row"><input class="input grow" id="f-phone" inputmode="tel" autocomplete="tel" value="'+esc(ph)+'"'+(S.verified?' readonly':'')+'>'+(S.verified?'':'<button type="button" class="btn sm" data-act="code">'+(S.codeSent?T('다시 받기','Resend'):T('인증번호 받기','Send code'))+'</button>')+'</div></div>'+otp+
+ otpBlock()+(S.social?'':idpwFields(true))+
  '<div class="card"><label class="check"><input type="checkbox" id="c-req"'+(F['c-req']?' checked':'')+'><span><b>'+T('[필수]','[Required]')+'</b> '+T('개인정보 수집·이용 동의 — 이름·단체 이름·휴대폰 번호를 주문 처리와 배달 연락에만 씁니다.','Consent to collect your name, organization and phone number for order handling and delivery only.')+'</span></label>'+
  '<label class="check"><input type="checkbox" id="c-mkt"'+(F['c-mkt']?' checked':'')+'><span><b>'+T('[선택]','[Optional]')+'</b> '+T('할인·재주문 안내 받기 (카카오톡 채널)','Get discounts and reorder reminders (KakaoTalk channel)')+'</span></label>'+
  '<button type="button" class="link small" data-act="toast" data-m="'+esc(T('개인정보 처리방침 전문은 공개 전에 붙입니다.','The full privacy policy will be added before launch.'))+'" style="align-self:flex-start;padding:0">'+T('개인정보 처리방침 보기','View privacy policy')+'</button></div>',
@@ -815,16 +836,35 @@ document.addEventListener('click',function(e){
      if(r.dry)toast(T('(시험 모드) 문자 대신 여기 표시 — 인증번호 '+r.code,'(Test mode) Your SMS code would be '+r.code),8000);
      else toast(T('문자로 인증번호를 보냈습니다.','We texted you a code.'),3000);});return;}
  if(a==='verify'){if(Date.now()-S.codeAt>300000){toast(T('시간이 지났습니다. 다시 받아 주세요.','Code expired. Please resend.'));return;}
-   call('apiVerifyCode',{phone:S.form['f-phone'],code:(S.form['f-code']||'').trim()},T('확인하는 중…','Checking…')).then(function(r){
+   call('apiVerifyCode',{phone:S.form['f-phone'],code:(S.form['f-code']||'').trim(),sess:S.sess},T('확인하는 중…','Checking…')).then(function(r){
      if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),4000);return;}
      S.vt=r.vt;S.verified=true;
+     /* 09-27 이미 회원인 번호 → 가입 화면 없이 바로 로그인(소셜로 막 들어온 경우 그 회원에 묶임) */
+     if(S.screen==='findpw'){S.known=r.known;if(r.sess)setLogin(r.sess,r.user);if(!r.known)toast(T('가입된 번호가 아닙니다. 회원가입을 해 주세요.','No member with this number. Please sign up.'),5000);rerender();return;}
+     /* 09-27 사장님: 네이버로 가입해 놓고 깜빡 카카오로 가입하려 하면 「이미 가입된 회원」이라고 알려 주고 그 회원으로 */
+     if(r.sess){var how={google:'구글',kakao:'카카오',naver:'네이버',phone:'휴대폰 번호'}[r.user.provider]||'';
+       var howEn={google:'Google',kakao:'Kakao',naver:'Naver',phone:'your phone number'}[r.user.provider]||'';
+       var was=S.social;
+       setLogin(r.sess,r.user);S.social='';S.verified=false;S.codeSent=false;clearPw();home('where');
+       toast(T('이미 '+how+'로 가입된 회원입니다'+(r.user.loginId?'(아이디 '+r.user.loginId+')':'')+'. 그 회원으로 로그인했습니다.'+(was&&was!==r.user.provider?' 다음부터는 '+{google:'구글',kakao:'카카오',naver:'네이버'}[was]+'로 들어오셔도 같은 회원입니다.':''),
+         'You already have an account (joined with '+howEn+(r.user.loginId?', ID '+r.user.loginId:'')+'). You are now signed in to it.'),8000);loadMine(true);return;}
      if(r.known){if(!(S.form['f-name']||'').trim())S.form['f-name']=r.known.name;if(!(S.form['f-group']||'').trim())S.form['f-group']=r.known.group;if(r.known.mkt)S.form['c-mkt']=true;S.form['c-req']=true;}
      rerender();toast(r.known?T('인증됐습니다. 전에 가입하신 정보를 불러왔습니다.','Verified. We loaded your saved details.'):T('인증됐습니다.','Verified.'));});return;}
  if(a==='signup'){if(!S.verified)return;if(!(S.form['f-name']||'').trim()){toast(T('이름을 넣어 주세요.','Please enter your name.'));return;}
+   if(!S.social){var ie=idpwErr(true);if(ie){toast(ie,4500);return;}}
    if(!S.form['c-req']){toast(T('[필수] 개인정보 동의에 체크해 주세요.','Please accept the required consent.'));return;}
-   call('apiSignup',{vt:S.vt,sess:S.sess,name:S.form['f-name'].trim(),group:(S.form['f-group']||'').trim(),mkt:!!S.form['c-mkt'],consent:true},T('가입하는 중…','Signing up…')).then(function(r){
+   call('apiSignup',{vt:S.vt,sess:S.sess,name:S.form['f-name'].trim(),group:(S.form['f-group']||'').trim(),mkt:!!S.form['c-mkt'],consent:true,
+     loginId:S.social?'':(S.form['f-id']||'').trim().toLowerCase(),pw:S.social?'':S.form['f-pw']},T('가입하는 중…','Signing up…')).then(function(r){
      if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);if(r.err.code==='verify'){S.verified=false;S.codeSent=false;S.vt='';rerender();}return;}
-     setLogin(r.sess,r.user);S.social='';home('where');toast(T('가입했습니다.','Signed up.'));loadMine(true);});return;}
+     setLogin(r.sess,r.user);S.social='';S.verified=false;S.codeSent=false;clearPw();home('where');toast(T('가입했습니다.','Signed up.'));loadMine(true);});return;}
+ if(a==='loginpw'){var lid=(S.form['f-lid']||'').trim(),lpw=val('f-lpw');if(!lid||!lpw){toast(T('아이디와 비밀번호를 넣어 주세요.','Enter your ID and password.'));return;}
+   call('apiLoginPw',{id:lid,pw:lpw},T('로그인하는 중…','Signing in…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);return;}
+     setLogin(r.sess,r.user);clearPw();home('where');toast(T('로그인했습니다.','Signed in.'));loadMine(true);});return;}
+ if(a==='resetpw'){var K=S.known||{},re=idpwErr(!K.loginId);if(re){toast(re,4500);return;}
+   call('apiResetPw',{vt:S.vt,id:(S.form['f-id']||'').trim().toLowerCase(),pw:S.form['f-pw']},T('저장하는 중…','Saving…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);return;}
+     setLogin(r.sess,r.user);S.verified=false;S.codeSent=false;S.known=null;clearPw();home('where');toast(T('비밀번호를 저장했습니다. 아이디: ','Password saved. ID: ')+r.user.loginId,5000);loadMine(true);});return;}
  if(a==='time'){S.slot=el.dataset.s;S.time=el.dataset.t;rerender();return;}
  if(a==='addropen'){S.addrOpen=true;rerender();return;}
  if(a==='addrclear'){S.addrSel=null;S.addrOpen=true;rerender();return;}
