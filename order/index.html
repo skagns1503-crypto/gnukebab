@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>경대케밥 단체주문</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=Black+Han+Sans&display=swap">
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<style>
+/* 화면 모양은 목업 2판(mockup/order_mockup.html, 09-19 확정) 그대로 — 휴대폰 틀·옆 설명판만 뺐다 */
+:root{
+  --ground:#EBEFEA; --panel:#FFFFFF; --panel2:#F5F7F4; --ink:#1B2623; --muted:#5B6964; --line:#D3DBD5;
+  --pine:#0F5C4E; --pine-ink:#FFFFFF; --pine-soft:#DAEAE4;
+  --saffron:#9A6508; --saffron-bg:#F6E7C4; --danger:#A8361F; --danger-bg:#F6DDD6;
+  --shadow:0 18px 50px rgba(15,40,34,.18);
+  --kakao:#FEE500; --kakao-ink:#191600; --naver:#03C75A; --naver-ink:#FFFFFF;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1513; --panel:#18211E; --panel2:#1F2A26; --ink:#E4EBE7; --muted:#98A7A1; --line:#2D3A35;
+    --pine:#4DB39A; --pine-ink:#08130F; --pine-soft:#1D3A32;
+    --saffron:#EBB850; --saffron-bg:#3A2D12; --danger:#EC8A74; --danger-bg:#3E2019;
+    --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1513; --panel:#18211E; --panel2:#1F2A26; --ink:#E4EBE7; --muted:#98A7A1; --line:#2D3A35;
+  --pine:#4DB39A; --pine-ink:#08130F; --pine-soft:#1D3A32;
+  --saffron:#EBB850; --saffron-bg:#3A2D12; --danger:#EC8A74; --danger-bg:#3E2019;
+  --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;font-size:14px;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
+.ex{display:inline-block;font-size:10.5px;font-weight:700;line-height:1.4;color:var(--saffron);background:var(--saffron-bg);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:1px;letter-spacing:.02em}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}
+
+/* app frame */
+.phone{position:relative;width:100%;max-width:520px;margin:0 auto;height:100vh;height:100dvh;background:var(--panel2);overflow:hidden;display:flex;flex-direction:column}
+@media (min-width:600px){body{padding-block:16px}.phone{height:calc(100vh - 32px);height:calc(100dvh - 32px);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}}
+
+/* ── PC 화면 — 폭이 넓으면 넓게 쓴다(휴대폰은 위 규칙 그대로) ── */
+@media (min-width:900px){
+  body{font-size:15px;padding-block:22px}
+  .phone{max-width:680px}
+  .appbar{padding:14px 20px 12px}
+  .appbar .title{font-size:17px}
+  .screen{padding:20px 22px}
+  .h{font-size:20px}
+}
+/* 사장님·직원 화면은 표 성격이라 더 넓게 + 달력과 목록을 두 단으로 */
+@media (min-width:1100px){
+  .phone.wide{max-width:1180px}
+  .phone.wide .screen{display:grid;grid-template-columns:minmax(380px,460px) 1fr;grid-auto-rows:max-content;align-items:start;gap:16px 20px;padding:22px 26px}
+  .phone.wide .screen>*{grid-column:2}
+  .phone.wide .screen>.cal{grid-column:1;grid-row:1/span 99;position:sticky;top:0}
+  .phone.wide .cal .d{min-height:68px}
+  .phone.wide .ocard{margin:0}
+}
+@media (min-width:1500px){ .phone.wide{max-width:1360px} }
+.testbar{background:var(--saffron-bg);color:var(--saffron);font-size:11.5px;font-weight:700;text-align:center;padding:4px 10px}
+.appbar{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;background:var(--panel);border-bottom:1px solid var(--line);min-height:52px}
+.appbar.bare{background:transparent;border-bottom:0;padding-bottom:0;min-height:0}
+.appbar .title{flex:1;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{border:0;background:transparent;padding:4px 8px;border-radius:8px;font-size:18px;line-height:1;color:var(--ink)}
+.cbtn{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:4px 9px;font-size:11.5px;font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap}
+.cbtn svg{width:14px;height:14px;fill:currentColor;flex:none}
+.cbtn.tel{background:var(--pine-soft);border-color:var(--pine);color:var(--pine)}
+.cbtn.map{color:var(--naver);border-color:var(--naver)}
+@media (max-width:420px){.cbtn span{display:none}.cbtn{padding:5px 7px}}
+.chipbtn{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;white-space:nowrap}
+.screen{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.foot{padding:12px 14px calc(16px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.toast{position:absolute;left:14px;right:14px;bottom:90px;background:var(--ink);color:var(--panel);border-radius:12px;padding:11px 14px;font-weight:500;font-size:13px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:5}
+.toast.on{opacity:1;transform:none}
+.phone.busy .screen,.phone.busy .foot,.phone.busy .appbar{pointer-events:none;opacity:.6}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+/* 달력 — 사장님 화면 */
+.cal{display:flex;flex-direction:column;gap:8px}
+.cal .head{display:flex;align-items:center;gap:8px}
+.cal .head b{flex:1;font-size:15px}
+.cal .nav{border:1px solid var(--line);background:var(--panel2);border-radius:8px;width:30px;height:30px;font-size:15px;line-height:1}
+.cal .wk,.cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .wk span{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding-bottom:2px}
+.cal .wk span:first-child{color:var(--danger)}
+.cal .d{position:relative;min-height:56px;border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:4px 4px 3px;display:flex;flex-direction:column;gap:2px;text-align:left;font:inherit;color:inherit}
+.cal .d.pad{border-color:transparent;background:transparent;pointer-events:none}
+.cal .d .n{font-size:11.5px;font-weight:700;color:var(--muted)}
+.cal .d.sun .n{color:var(--danger)}
+.cal .d.today{border-color:var(--pine);box-shadow:inset 0 0 0 1px var(--pine)}
+.cal .d.on{background:var(--pine);border-color:var(--pine)}
+.cal .d.on .n,.cal .d.on .q,.cal .d.on .c{color:var(--pine-ink)}
+.cal .d.off{background:var(--panel2)}
+.cal .d .q{font-size:11px;font-weight:700;color:var(--pine);line-height:1.25}
+.cal .d .c{font-size:10px;color:var(--muted);line-height:1.2}
+.cal .d .warn{color:var(--saffron)}
+.cal .d .dots{display:flex;gap:2px;margin-top:auto;flex-wrap:wrap}
+.cal .d .dot2{width:5px;height:5px;border-radius:50%;background:var(--pine)}
+.cal .d .dot2.requested{background:var(--saffron)}
+.cal .d .dot2.closed{background:var(--line)}
+.cal .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.cal .legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:1px}
+
+.h{font-size:18px;font-weight:700;margin:0;text-wrap:balance}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-weight:500;font-size:13px}
+.input,select.input,textarea.input{width:100%;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 12px}
+textarea.input{min-height:70px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center}
+.row>.grow{flex:1;min-width:0}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:12px 14px;font-weight:700;width:100%;text-align:center}
+.btn.primary{background:var(--pine);border-color:var(--pine);color:var(--pine-ink)}
+.btn.warn{background:var(--saffron-bg);border-color:var(--saffron);color:var(--saffron)}
+.btn.danger{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{width:auto;padding:8px 12px;font-size:13px}
+.link{border:0;background:transparent;color:var(--pine);font-weight:500;padding:6px;text-decoration:underline;text-underline-offset:3px}
+a.tel{color:var(--pine);font-weight:700;text-decoration:none}
+
+/* start */
+.hero{background:var(--pine);color:var(--pine-ink);border-radius:18px;padding:22px 18px;display:flex;flex-direction:column;gap:8px}
+.brand{font-family:"Black Han Sans","IBM Plex Sans KR",sans-serif;font-size:30px;line-height:1.1;letter-spacing:.01em}
+.tagline{font-weight:700;font-size:13px;opacity:.95}
+.hero p{margin:0;opacity:.9}
+.facts{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.facts li{border:1px solid color-mix(in srgb,var(--pine-ink) 40%,transparent);border-radius:999px;padding:3px 10px;font-size:12px}
+.auth{display:flex;flex-direction:column;gap:8px}
+.social.google{background:var(--panel);}
+.social.kakao{background:var(--kakao);color:var(--kakao-ink);border-color:var(--kakao)}
+.social.naver{background:var(--naver);color:var(--naver-ink);border-color:var(--naver)}
+.soon{font-size:11px;font-weight:500;opacity:.75}
+.langsw{display:flex;justify-content:center;gap:4px}
+.langsw button{border:0;background:transparent;color:var(--muted);padding:4px 8px}
+.langsw button[aria-pressed="true"]{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+/* 4.8 홈 — 메뉴 사진 (배민에 올린 새 사진과 같은 것) */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.mcard img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--panel2)}
+.mcard .mtxt{padding:8px 10px 10px;display:flex;flex-direction:column;gap:2px}
+.mcard .mtxt b{font-size:14px;line-height:1.3}
+.mcard .mtxt span{font-size:13px;color:var(--muted)}
+.hellome{margin:0;text-align:center;font-size:13px;color:var(--muted)}
+
+/* check */
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.check input{margin-top:3px;accent-color:var(--pine);width:16px;height:16px}
+
+/* dates */
+.dates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.date{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:1px}
+.date b{font-size:13px}
+.date span{font-size:11px;color:var(--muted)}
+.date[aria-pressed="true"]{border-color:var(--pine);background:var(--pine-soft);box-shadow:inset 0 0 0 1px var(--pine)}
+.date:disabled{opacity:.5;cursor:not-allowed;background:var(--panel2)}
+.date.full span{color:var(--danger)}
+.slot{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px;font-weight:500}
+.slot[aria-pressed="true"]{border-color:var(--pine);background:var(--pine-soft);box-shadow:inset 0 0 0 1px var(--pine)}
+.times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.times .slot{padding:8px 6px;font-variant-numeric:tabular-nums}
+.left{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--saffron);background:var(--saffron-bg);border-radius:99px;padding:2px 8px;white-space:nowrap}
+.left.ok{color:var(--pine);background:var(--pine-soft)}
+.note{border-radius:10px;padding:10px 12px;font-size:13px}
+.note.ok{background:var(--pine-soft)}
+.note.warn{background:var(--saffron-bg);color:var(--saffron)}
+.note.bad{background:var(--danger-bg);color:var(--danger)}
+.pc{height:440px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+
+/* menu */
+.item{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.thumb{width:54px;height:54px;border-radius:10px;background:repeating-linear-gradient(135deg,var(--pine-soft) 0 6px,var(--panel2) 6px 12px);display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center}
+.item .nm{font-weight:700}
+.item .pr{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.step{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px}
+.step button{border:1px solid var(--line);background:var(--panel2);border-radius:8px;min-width:32px;height:30px;font-weight:700}
+.step .q{min-width:36px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+/* 개수 직접 넣기 — ＋/－ 사이 숫자를 손으로 칠 수 있다(09-20 사장님) */
+.step .qin{width:52px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:inherit;font-size:15px;padding:0 4px}
+.step .qin:focus{outline:2px solid var(--pine);outline-offset:1px}
+/* 할인 코드 칸 */
+.promo{display:flex;gap:6px;align-items:center;margin-top:8px}
+.promo input{flex:1;min-width:0;text-transform:uppercase}
+.promo .btn{flex:none}
+.small.ok{color:var(--pine);font-weight:700}
+.small.bad{color:var(--danger);font-weight:700}
+.promo .small{flex:1}
+.sum{display:flex;flex-direction:column;gap:4px;font-variant-numeric:tabular-nums}
+.sum div{display:flex;justify-content:space-between;gap:8px}
+.sum .total{font-weight:700;font-size:16px;border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.bar{height:6px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pine)}
+.bar.full i{background:var(--danger)}
+
+/* timeline */
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding-bottom:14px;position:relative}
+.tl li::before{content:"";position:absolute;left:10px;top:20px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:var(--panel);display:grid;place-items:center;font-size:11px;font-weight:700;z-index:1}
+.tl li.done .dot{background:var(--pine);border-color:var(--pine);color:var(--pine-ink)}
+.tl li.now .dot{border-color:var(--pine);color:var(--pine)}
+.tl li.done::before{background:var(--pine)}
+.tl b{display:block}
+.tl span{font-size:12px;color:var(--muted)}
+.acct{font-variant-numeric:tabular-nums;font-size:16px;font-weight:700}
+
+/* owner */
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.p-requested{background:var(--saffron-bg);color:var(--saffron)}
+.p-accepted{background:var(--panel2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.p-paid{background:var(--pine-soft);color:var(--pine)}
+.p-out{background:var(--pine);color:var(--pine-ink)}
+.p-delivered{background:var(--panel2);color:var(--muted)}
+.p-rejected{background:var(--danger-bg);color:var(--danger)}
+.p-test{background:var(--panel2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.ocard{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:4px;width:100%}
+.ocard .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.ocard .who{font-weight:700}
+.ocard .meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 11px;font-size:12.5px;white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.cap{display:grid;grid-template-columns:62px minmax(0,1fr) 58px;gap:8px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.cap .n{text-align:right;color:var(--muted)}
+.receipt{border:2px solid var(--pine);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.receipt .big{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.kv{display:grid;grid-template-columns:84px minmax(0,1fr);gap:4px 10px;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.mk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+.mk b{text-align:right}
+/* 4.7 후기 별점 */
+.stars{display:flex;gap:2px}
+.stars button{border:0;background:transparent;font-size:32px;line-height:1;color:var(--line);padding:2px 3px}
+.stars button[aria-pressed="true"]{color:var(--saffron)}
+.stars.ro{font-size:17px;color:var(--saffron);letter-spacing:1px}
+.rvtext{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="phone" id="phone" aria-live="polite">
+  <div class="testbar" id="testbar" hidden></div>
+  <div class="appbar" id="appbar"></div>
+  <div class="screen" id="screen"></div>
+  <div class="foot" id="foot"></div>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<script>
+(function(){
+/* 서버(doGet)가 아래 자리에 설정·메뉴·도시·날짜별 남은 수량을 넣어 준다 */
+var BOOT='__BOOT__';
+/* 4.8 — 홈페이지(gnukebab.co.kr/order)에 얹은 정적 판은 빌더가 EXEC 를 실제 /exec 주소로 바꿔 넣는다.
+   구글 안(GAS)·로컬 미리보기에서는 자리표 그대로 → EXEC='' → 예전처럼 google.script.run 을 쓴다 */
+var EXEC="https://script.google.com/macros/s/AKfycbzxAFCD0S13CV4K9cTpTiD3qc1BRMvPNtsB2poGLKcMhNreHKQw4HesFTT2ZGPUNzxS/exec";if(EXEC.indexOf('http')!==0)EXEC='';
+var Q={};location.search.replace(/[?&]([^=&]+)=([^&]*)/g,function(m,k,v){Q[k]=decodeURIComponent(v.replace(/\+/g,' '));return m;});
+
+var BRAND,CFG,CAP,CITIES,MENU,TIMES,AVAIL,OFFSET=0,ROLE='customer',KEY='';
+var CONTACT={};
+function applyBoot(b){
+  BRAND=b.brand;CFG=b.st;CAP=CFG.cap;CONTACT=b.contact||{};
+  CITIES=b.cities.map(function(c){return {id:c.id,ko:c.name_ko,en:c.name_en,area:c.area,minAmount:c.minAmount,min:c.min,fee:c.fee,match:c.match};})
+    .concat([{id:'other',ko:'목록에 없는 곳',en:'Somewhere else',out:true}]);
+  MENU=b.menu.map(function(m){return {id:m.id,ko:m.name_ko,en:m.name_en,price:m.price,food:m.food,note_ko:m.note_ko,note_en:m.note_en};});
+  TIMES={lunch:CFG.lunchTimes,dinner:CFG.dinnerTimes};
+  AVAIL=b.avail;OFFSET=b.nowMs-Date.now();
+}
+function nowMs(){return Date.now()+OFFSET;}
+
+/* 이 기기에만 남기는 것 — 가입 정보·내 주문표·언어·배송지 (시트엔 주문만 간다) */
+function lsGet(k,d){try{var v=localStorage.getItem('go.'+k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{if(v==null)localStorage.removeItem('go.'+k);else localStorage.setItem('go.'+k,JSON.stringify(v));}catch(e){}}
+
+var SLOTS={lunch:{ko:'점심',en:'Lunch'},dinner:{ko:'저녁',en:'Dinner'}};
+var ST={requested:{ko:'수락 대기',en:'Awaiting approval'},accepted:{ko:'입금 대기',en:'Awaiting payment'},paid:{ko:'확정',en:'Confirmed'},cooking:{ko:'만드는 중',en:'Preparing'},out:{ko:'배달 중',en:'On the way'},delivered:{ko:'배달 완료',en:'Delivered'},
+  rejected:{ko:'거절',en:'Declined'},rejected_auto:{ko:'자동 취소',en:'Closed'},expired_unpaid:{ko:'입금 기한 지남',en:'Payment expired'},cancelled:{ko:'취소',en:'Cancelled'}};
+var CLOSED=['rejected','rejected_auto','expired_unpaid','cancelled'];
+function pillCls(s){return 'p-'+(CLOSED.indexOf(s)>=0?'rejected':s);}
+
+var S;
+function emptyQty(){var q={};MENU.forEach(function(m){q[m.id]=0;});return q;}
+function fresh(){
+  var prof=lsGet('profile',null);
+  S={lang:lsGet('lang','ko'),screen:'start',hist:[],user:prof,sess:lsGet('sess',null),vt:'',social:'',codeSent:false,codeAt:0,verified:false,form:{},
+     city:'',date:null,slot:'lunch',time:TIMES.lunch[2]||TIMES.lunch[0],qty:emptyQty(),
+     addrSel:null,addrOpen:false,spot:'',receipt:'phone',mine:null,myOrders:[],ofilter:'all',oid:null,sday:null,omonth:null,oday:null,
+     orders:null,ownerAvail:[],inquiryReason:'',delConfirm:false,promo:null,promoMsg:'',promoBad:false,qraw:{},
+     points:null,ptUse:0,ptRaw:null,rvStars:{},reviews:[]};
+}
+
+function T(k,e){return S.lang==='ko'?k:e;}
+function L(o){return S.lang==='ko'?o.ko:o.en;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function won(n){return S.lang==='ko'?n.toLocaleString('ko-KR')+'원':'₩'+n.toLocaleString('en-US');}
+var WK={ko:['일','월','화','수','목','금','토'],en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat']};
+function dObj(ymd){var p=ymd.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function fd(ymd){var d=dObj(ymd);return S.lang==='ko'?(d.getMonth()+1)+'/'+d.getDate()+'('+WK.ko[d.getDay()]+')':WK.en[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate();}
+function fdt(ms){var d=new Date(ms),h=d.getHours(),m=('0'+d.getMinutes()).slice(-2);
+  if(S.lang==='ko'){return (d.getMonth()+1)+'/'+d.getDate()+' '+(h<12?'오전 ':'오후 ')+((h%12)||12)+'시'+(m!=='00'?' '+m+'분':'');}
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+((h%12)||12)+(m!=='00'?':'+m:'')+(h<12?' AM':' PM');}
+function ago(ms){var m=Math.max(0,Math.round((nowMs()-ms)/60000));
+  if(m<1)return T('방금','Just now');if(m<60)return T(m+'분 전',m+' min ago');var h=Math.round(m/60);if(h<24)return T(h+'시간 전',h+' h ago');var d=Math.round(h/24);return T(d+'일 전',d+' days ago');}
+function tlabel(sl,t){return (sl==='lunch'?T('점심','Lunch'):T('저녁','Dinner'))+(t?' '+t:'');}
+function EX(){return CFG.sample?'<span class="ex">'+T('예시','sample')+'</span>':'';}
+function city(id){for(var i=0;i<CITIES.length;i++)if(CITIES[i].id===id)return CITIES[i];return null;}
+function avail(ymd){for(var i=0;i<AVAIL.length;i++)if(AVAIL[i].date===ymd)return AVAIL[i];return null;}
+function iname(l){return S.lang==='ko'?l.ko:l.en;}
+function hourLabel(){var h=CFG.deadlineHour;return T((h<12?'오전 ':'오후 ')+((h%12)||12)+'시',((h%12)||12)+(h<12?' AM':' PM'));}
+/* 첫 화면 할인 한 줄 — 09-20 사장님 확정: 조건 없이 5%, 마지막 날은 시트(discount_until)에서 */
+function saleLine(){
+  var pct=Math.round(CFG.discountRate*100),p=String(CFG.discountUntil||'').split('-');
+  if(!onSaleNow())return '';
+  var ko=CFG.discountMin>1?CFG.discountMin+'인분 이상 '+pct+'% 할인':'모든 주문 '+pct+'% 할인';
+  var en=CFG.discountMin>1?pct+'% off from '+CFG.discountMin+' meals':pct+'% off every order';
+  if(p.length===3){ko+=' · '+(+p[1])+'월 '+(+p[2])+'일까지';en+=' until '+(+p[1])+'/'+(+p[2]);}
+  return T(ko,en);}
+
+/* 금액 미리보기 — 서버 rules.gs 의 quote·applyCode 와 같은 식. 최종 금액은 서버가 다시 계산한다 */
+function ymdNow(){var d=new Date(nowMs()+9*3600000);function p(n){return (n<10?'0':'')+n;}
+  return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate());}
+function onSaleNow(){return !CFG.discountUntil||ymdNow()<=CFG.discountUntil;}
+function calc(items,cityId){
+  var food=0,sub=0,foodSub=0,drinkQ=0;
+  MENU.forEach(function(m){var q=items[m.id]||0;if(m.food){food+=q;foodSub+=q*(m.price||0);}else drinkQ+=q;if(m.price)sub+=q*m.price;});
+  var sale=food>=CFG.discountMin&&onSaleNow();
+  var disc=sale?Math.round(foodSub*CFG.discountRate/10)*10:0;
+  var c=city(cityId);var fee=c&&!c.out&&food>0?c.fee:0;
+  /* goods = 코드를 빼기 전 금액. ⛔ 최소 주문 금액은 이 값으로 본다 — 코드로는 못 넘긴다 */
+  var goods=sub-disc,cut=0,feeOff=0,p=S.promo;
+  if(p&&food>0&&goods>=(p.minAmount||0)){
+    if(p.kind==='fee_free')feeOff=fee;
+    else if(p.kind==='amount')cut=Math.min(Math.max(0,p.value),goods);
+    else if(p.kind==='percent')cut=Math.min(Math.round(goods*(p.value>1?p.value/100:p.value)/10)*10,goods);
+  }
+  /* 4.7 포인트 — 코드까지 뺀 메뉴 금액까지만(배달비엔 못 씀). ⛔ 최소 주문 금액은 goods(포인트 빼기 전)로 본다 */
+  var pmax=Math.max(0,goods-cut),pts=S.points&&food>0?Math.min(S.ptUse||0,S.points.balance,pmax):0;
+  return {food:food,sub:sub,disc:disc,sale:sale,fee:fee-feeOff,goods:goods,cut:cut,feeOff:feeOff,pts:pts,pmax:pmax,total:goods-cut-pts+fee-feeOff,drinkQ:drinkQ};
+}
+function block(){
+  var c=city(S.city);
+  if(!c)return {kind:'need',msg:T('배달 도시를 골라 주세요.','Choose a delivery city.')};
+  if(c.out)return {kind:'inq',code:'out_of_area',msg:T('아직 정기 배달 지역이 아닙니다. 문의를 남기시면 따로 견적을 드립니다.','We don\'t deliver there yet. Leave an inquiry and we\'ll send a quote.')};
+  if(S.date===null)return {kind:'need',msg:T('배달 날짜를 골라 주세요.','Choose a delivery date.')};
+  var k=calc(S.qty,S.city);
+  if(k.food===0)return {kind:'need',msg:T('메뉴 수량을 골라 주세요.','Add some meals.')};
+  var a=avail(S.date),left=a?a.left:0;
+  if(k.food>left)return {kind:'cap',msg:T('이 날은 '+left+'인분까지만 받을 수 있습니다. 수량을 줄이거나 다른 날짜를 골라 주세요.','Only '+left+' meals left on this day. Reduce the quantity or pick another date.')};
+  if(k.goods<c.minAmount)return {kind:'inq',code:'below_min',msg:T(L(c)+'의 최소 주문 금액은 '+won(c.minAmount)+'입니다(배달비 제외). 지금 '+won(k.goods)+' — '+won(c.minAmount-k.goods)+' 더 담거나 문의를 남겨 주세요.','The minimum order for '+L(c)+' is '+won(c.minAmount)+' (delivery fee not included). You have '+won(k.goods)+' — add '+won(c.minAmount-k.goods)+' more or send an inquiry.')};
+  return null;
+}
+
+/* 서버 부르기 — 정적 판(EXEC 있음)은 fetch 로 /exec 창구(doPost)를 부르고,
+   구글 안·미리보기는 예전처럼 google.script.run. 본문을 글자 그대로 보내야(text/plain) 사전 확인 없이 통과한다 */
+function api(fn,arg){
+  if(EXEC)return fetch(EXEC,{method:'POST',redirect:'follow',body:JSON.stringify({fn:fn,arg:arg})})
+    .then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();});
+  return new Promise(function(res,rej){try{google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](arg);}catch(e){rej(e);}});
+}
+function call(fn,arg,msg){
+  var ph=document.getElementById('phone');ph.classList.add('busy');if(msg)toast(msg,20000);
+  return api(fn,arg).then(function(r){ph.classList.remove('busy');hideToast();return r;},function(e){ph.classList.remove('busy');
+    toast(T('연결이 잠깐 끊겼습니다. 다시 눌러 주세요.','Connection problem. Please try again.'),4000);throw e;});
+}
+function tokens(){return lsGet('orders',[]).map(function(x){return x.token;});}
+function mineArg(){return {tokens:tokens(),sess:S.sess,test:!!BOOT.test};}
+/* 로그인 끝 — 표와 가입 정보를 이 기기에 넣는다 */
+function setLogin(sess,user){S.sess=sess;lsSet('sess',sess);S.user={name:user.name,group:user.group,phone:user.phone,mkt:!!user.mkt,consent:true,provider:user.provider};lsSet('profile',S.user);}
+
+/* ── 화면들 ── */
+var SCR={};
+/* 4.8 홈 — 사장님 확정: 메뉴 사진 + 주문하기 + 내 주문 + 로그인/로그아웃 (09-26) */
+var IMGB=EXEC?'img/':'https://gnukebab.co.kr/order/img/';
+var PHOTO={lunchbox:1,kebab:1,ricebowl:1,snack:1,drink:1,fries:1,cheesefries:1};
+SCR.start=function(){
+ var logged=S.user&&(S.sess||!BOOT.smsLive);
+ var cards=MENU.filter(function(m){return PHOTO[m.id];}).map(function(m){
+   var note=T(m.note_ko||'',m.note_en||'');
+   return '<div class="mcard"><img src="'+IMGB+m.id+'.jpg" alt="'+esc(iname(m))+'" loading="lazy" onerror="this.style.display=\'none\'">'+
+    '<div class="mtxt"><b>'+esc(iname(m))+'</b><span>'+(m.price?won(m.price):T('가격 미정','Price TBD'))+(note?' '+esc(note):'')+EX()+'</span></div></div>';}).join('');
+ var auth;
+ if(logged)auth='<div class="auth"><p class="hellome">'+esc(S.user.name)+T('님으로 로그인돼 있습니다.',', you are signed in.')+'</p>'+
+  '<button type="button" class="link" data-act="logout">'+T('로그아웃','Sign out')+'</button></div>';
+ else auth='<div class="auth">'+
+  '<button type="button" class="btn" data-act="go" data-to="signup">'+T('휴대폰 번호로 가입 · 로그인','Sign up / log in with phone number')+'</button>'+
+  ['Google','Kakao','Naver'].map(function(p){var k=p.toLowerCase(),u=(BOOT.oauth||{})[k],lb=T({Google:'구글',Kakao:'카카오',Naver:'네이버'}[p]+'로 계속하기','Continue with '+p);
+    if(u)return '<a class="btn social '+k+'" href="'+esc(u)+'" target="_top" rel="noopener noreferrer" referrerpolicy="no-referrer">'+lb+'</a>';
+    return '<button type="button" class="btn social '+k+'" data-act="social">'+lb+' <span class="soon">'+T('· 준비 중','· coming soon')+'</span></button>';}).join('')+
+  '</div>';
+ return {bar:false,body:
+ '<div class="langsw"><button type="button" data-act="lang" data-l="ko" aria-pressed="'+(S.lang==='ko')+'">한국어</button><button type="button" data-act="lang" data-l="en" aria-pressed="'+(S.lang==='en')+'">English</button></div>'+
+ '<div class="hero"><div class="brand">'+esc(T(BRAND.name_ko,BRAND.name_en))+'</div><div class="tagline">'+esc(T(BRAND.tag_ko,BRAND.tag_en))+'</div><p>'+esc(T(BRAND.sub_ko,BRAND.sub_en))+'</p>'+
+ '<ul class="facts">'+(saleLine()?'<li>'+saleLine()+'</li>':'')+'<li>'+T('배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'까지 주문','Order by '+hourLabel()+', '+CFG.deadlineDaysBefore+' days ahead')+'</li><li>'+T('계좌이체 · 현금영수증','Bank transfer · cash receipt')+'</li></ul></div>'+
+ '<div class="auth" style="margin-top:2px">'+
+ '<button type="button" class="btn primary" data-act="go" data-to="where">'+T('주문하기','Start an order')+'</button>'+
+ ((logged||tokens().length)?'<button type="button" class="btn" data-act="my">'+T('내 주문','My orders')+'</button>':'')+
+ '</div>'+
+ '<div class="lbl" style="margin:8px 0 -4px">'+T('단체 메뉴','Group menu')+'</div><div class="mgrid">'+cards+'</div>'+
+ auth};};
+
+SCR.signup=function(){
+ var F=S.form;
+ var nm=F['f-name']||'',gp=F['f-group']||'',ph=F['f-phone']||'010-';
+ var otp='';
+ if(S.verified)otp='<div class="note ok small">✓ '+T('휴대폰 인증이 끝났습니다.','Phone number verified.')+'</div>';
+ else if(S.codeSent)otp='<div class="field"><label for="f-code">'+T('인증번호 6자리','6-digit code')+'</label><div class="row"><input class="input grow" id="f-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" value="'+esc(F['f-code']||'')+'"><button type="button" class="btn sm primary" data-act="verify">'+T('확인','Verify')+'</button></div><span class="small muted" id="otp-timer"></span></div>';
+ var PN={google:'구글',kakao:'카카오',naver:'네이버'};
+ return {title:T('회원가입','Sign up'),back:true,body:
+ (S.social?'<div class="note ok small">✓ '+T(PN[S.social]+'로 로그인했습니다. 배달 연락용 휴대폰 번호만 확인해 주세요.','Signed in with '+S.social.charAt(0).toUpperCase()+S.social.slice(1)+'. Please confirm your mobile number for delivery.')+'</div>':'')+
+ '<p class="muted small" style="margin:0">'+T('주문하신 분과 배달 받을 연락처를 확인하는 데만 씁니다.','Used only to contact you about your order and delivery.')+'</p>'+
+ '<div class="field"><label for="f-name">'+T('이름','Name')+'</label><input class="input" id="f-name" autocomplete="name" value="'+esc(nm)+'" placeholder="'+T('홍길동','Your name')+'"></div>'+
+ '<div class="field"><label for="f-group">'+T('단체 이름','Organization')+'</label><input class="input" id="f-group" value="'+esc(gp)+'" placeholder="'+T('예: ○○대학교 유학생회','e.g. ○○ Univ. International Student Association')+'"></div>'+
+ '<div class="field"><label for="f-phone">'+T('휴대폰 번호','Mobile number')+'</label><div class="row"><input class="input grow" id="f-phone" inputmode="tel" autocomplete="tel" value="'+esc(ph)+'"'+(S.verified?' readonly':'')+'>'+(S.verified?'':'<button type="button" class="btn sm" data-act="code">'+(S.codeSent?T('다시 받기','Resend'):T('인증번호 받기','Send code'))+'</button>')+'</div></div>'+otp+
+ '<div class="card"><label class="check"><input type="checkbox" id="c-req"'+(F['c-req']?' checked':'')+'><span><b>'+T('[필수]','[Required]')+'</b> '+T('개인정보 수집·이용 동의 — 이름·단체 이름·휴대폰 번호를 주문 처리와 배달 연락에만 씁니다.','Consent to collect your name, organization and phone number for order handling and delivery only.')+'</span></label>'+
+ '<label class="check"><input type="checkbox" id="c-mkt"'+(F['c-mkt']?' checked':'')+'><span><b>'+T('[선택]','[Optional]')+'</b> '+T('할인·재주문 안내 받기 (카카오톡 채널)','Get discounts and reorder reminders (KakaoTalk channel)')+'</span></label>'+
+ '<button type="button" class="link small" data-act="toast" data-m="'+esc(T('개인정보 처리방침 전문은 공개 전에 붙입니다.','The full privacy policy will be added before launch.'))+'" style="align-self:flex-start;padding:0">'+T('개인정보 처리방침 보기','View privacy policy')+'</button></div>',
+ foot:'<button type="button" class="btn primary" data-act="signup"'+(S.verified?'':' disabled')+'>'+(S.verified?T('가입하고 주문하기','Sign up and order'):T('휴대폰 인증 후 가입할 수 있어요','Verify your phone to continue'))+'</button>'};};
+
+SCR.where=function(){
+ var c=city(S.city);
+ var opts='<option value="">'+T('도시를 고르세요','Choose a city')+'</option>'+CITIES.map(function(x){return '<option value="'+x.id+'"'+(x.id===S.city?' selected':'')+'>'+esc(L(x))+'</option>';}).join('');
+ var info='';
+ if(c&&c.out)info='<div class="note bad">'+T('아직 정기 배달 지역이 아닙니다. 다음 화면에서 문의를 남기실 수 있습니다.','Not a regular delivery area yet. You can send an inquiry on the next screen.')+'</div>';
+ else if(c)info='<div class="note ok">'+(c.area?'<b>'+esc(c.area)+'</b> · ':'')+T('배달비','Delivery fee')+' <b>'+(c.fee?won(c.fee):T('없음','free'))+'</b> · '+T('최소 주문 금액','Minimum order')+' <b>'+won(c.minAmount)+'</b>'+(c.min?' <span class="muted">('+T('약 '+c.min+'인분','about '+c.min+' meals')+')</span>':'')+'<div class="small muted">'+T('최소 주문 금액은 배달비를 뺀 메뉴 금액 기준이고, 인분은 섞어 시킬 때의 예상치입니다.','The minimum counts the menu amount only (no delivery fee); the meal count is an estimate.')+'</div></div>';
+ var dates=AVAIL.map(function(a){
+   var closed=nowMs()>=a.deadline,full=a.left<=0,off=closed||full||a.holiday;
+   var sub=a.holiday?T('쉬는 날','Closed'):closed?T('마감 지남','Closed'):full?T('가득 참','Full'):T(a.left+'인분 남음',a.left+' left');
+   return '<button type="button" class="date'+(full||a.holiday?' full':'')+'" data-act="date" data-d="'+a.date+'" aria-pressed="'+(S.date===a.date)+'"'+(off?' disabled':'')+'><b>'+fd(a.date)+'</b><span>'+sub+'</span></button>';}).join('');
+ var sel=S.date?avail(S.date):null;
+ var dlNote=sel?'<div class="small muted">'+T('이 날 주문 마감: ','Order deadline: ')+'<b>'+fdt(sel.deadline)+'</b></div>':'<div class="small muted">'+T('주문 마감은 배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'입니다. 남은 수량은 점심·저녁 합쳐 하루 '+CAP+'인분 기준.','Orders close at '+hourLabel()+' '+CFG.deadlineDaysBefore+' days before delivery. Daily limit: '+CAP+' meals, lunch and dinner combined.')+EX()+'</div>';
+ var canNext=c&&(c.out||S.date!==null);
+ return {title:T('어디로, 언제','Where and when'),back:true,right:'my',body:
+ '<h2 class="h">'+T('어디로, 언제 받으세요?','Where and when should we deliver?')+'</h2>'+
+ '<div class="field"><label for="f-city">'+T('배달 도시','Delivery city')+'</label><select class="input" id="f-city" data-change="city">'+opts+'</select></div>'+info+
+ (c&&c.out?'':'<div class="field"><label>'+T('배달 날짜','Delivery date')+'</label><div class="dates">'+dates+'</div>'+dlNote+'</div>'+
+ '<div class="field"><label>'+T('도착 시간','Arrival time')+EX()+'</label>'+
+ ['lunch','dinner'].map(function(s){return '<div class="small muted" style="margin-top:2px">'+(s==='lunch'?T('점심','Lunch'):T('저녁','Dinner'))+'</div><div class="times">'+TIMES[s].map(function(t){return '<button type="button" class="slot" data-act="time" data-s="'+s+'" data-t="'+t+'" aria-pressed="'+(S.time===t)+'">'+t+'</button>';}).join('')+'</div>';}).join('')+
+ '<span class="small muted">'+T('고르신 시간에 맞춰 도착하도록 출발합니다. 날짜 수량은 점심·저녁 합쳐서 셉니다.','We leave in time to arrive at your chosen time. Daily limits count lunch and dinner together.')+'</span></div>'),
+ foot:c&&c.out?'<button type="button" class="btn warn" data-act="inq">'+T('문의하기','Send an inquiry')+'</button>':'<button type="button" class="btn primary" data-act="go" data-to="menu"'+(canNext?'':' disabled')+'>'+T('메뉴 고르기','Choose meals')+'</button>'};};
+
+/* 할인 코드 칸 — 코드를 넣으면 서버가 확인한다. ⛔ 최소 주문 금액은 코드로 넘길 수 없다(막는 곳은 block·서버) */
+function promoBox(){
+  if(S.promo)return '<div class="promo"><span class="small ok">✓ '+T('코드 '+esc(S.promo.code)+' 적용됨','Code '+esc(S.promo.code)+' applied')+'</span>'+
+    '<button type="button" class="btn sm" data-act="promoclear">'+T('빼기','Remove')+'</button></div>';
+  return '<div class="promo"><input class="input" id="f-promo" placeholder="'+T('할인 코드가 있으면 넣어 주세요','Discount code (optional)')+'" autocapitalize="characters" autocomplete="off" value="'+esc(S.form['f-promo']||'')+'">'+
+    '<button type="button" class="btn sm primary" data-act="promo">'+T('적용','Apply')+'</button></div>'+
+    (S.promoMsg?'<div class="small '+(S.promoBad?'bad':'ok')+'">'+esc(S.promoMsg)+'</div>':'');
+}
+/* 4.7 포인트 — 날짜 글자·남은 포인트 한 줄·쓰기 칸 */
+function fdY(ymd){var p=String(ymd).split('-');return p.length<3?'':T((+p[0])+'년 '+(+p[1])+'월 '+(+p[2])+'일',(+p[1])+'/'+(+p[2])+'/'+p[0]);}
+function ptWon(n){return (n||0).toLocaleString(S.lang==='ko'?'ko-KR':'en-US')+'P';}
+function ptExpLine(p){return p&&p.nextExp?'<div class="small muted">'+T(ptWon(p.nextAmt)+'는 '+fdY(p.nextExp)+'까지 쓰실 수 있어요.',ptWon(p.nextAmt)+' can be used until '+fdY(p.nextExp)+'.')+'</div>':'';}
+function pointsBox(k){
+  var p=S.points;if(!p||!p.balance)return '';
+  var v=S.ptRaw!=null?S.ptRaw:(S.ptUse?String(S.ptUse):'');
+  var over=S.ptUse>k.pts?'<div class="small bad">'+T('이번 주문엔 '+ptWon(k.pts)+'까지만 쓸 수 있어요(메뉴 금액까지, 배달비 제외).','Up to '+ptWon(k.pts)+' on this order (menu amount only, not the delivery fee).')+'</div>':'';
+  return '<div class="promo"><span class="small" style="flex:none">'+T('포인트','Points')+' <b>'+ptWon(p.balance)+'</b></span>'+
+    '<input class="input" id="f-pts" data-pts="1" type="text" inputmode="numeric" autocomplete="off" value="'+esc(v)+'" placeholder="'+T('쓸 포인트','Points to use')+'" aria-label="'+T('이번 주문에 쓸 포인트','Points to use on this order')+'">'+
+    '<button type="button" class="btn sm" data-act="ptsall">'+T('전부','All')+'</button></div>'+over+ptExpLine(p);
+}
+
+SCR.menu=function(){
+ var c=city(S.city),k=calc(S.qty,S.city),bl=block(),a=avail(S.date),left=a?a.left:0,rem=Math.max(0,c.minAmount-k.goods);
+ var rows=MENU.map(function(m){var q=S.qty[m.id]||0,note=T(m.note_ko,m.note_en);
+   return '<div class="item"><div class="thumb">'+T('사진','photo')+'</div><div><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+
+   '<div class="step"><button type="button" data-act="q" data-id="'+m.id+'" data-d="-1" aria-label="'+T('하나 빼기','Remove one')+'">−</button>'+
+   '<input class="q qin" type="text" inputmode="numeric" data-qty="'+m.id+'" id="q-'+m.id+'" value="'+esc(S.qraw[m.id]!=null?S.qraw[m.id]:q)+'" aria-label="'+T(esc(L(m))+' 개수 직접 넣기',esc(L(m))+' quantity')+'">'+
+   '<button type="button" data-act="q" data-id="'+m.id+'" data-d="1" aria-label="'+T('하나 더','Add one')+'">+</button><button type="button" data-act="q" data-id="'+m.id+'" data-d="10">+10</button>'+(m.food?'<span class="left'+(rem?'':' ok')+'">'+(rem?T('최소까지 약 '+Math.ceil(rem/(m.price*(1-CFG.discountRate)))+'개',Math.ceil(rem/(m.price*(1-CFG.discountRate)))+' more to min.'):T('✓ 최소 채움','✓ minimum met'))+'</span>':'')+'</div></div></div>';}).join('');
+ var pct=c.minAmount?Math.min(100,Math.round(k.goods/c.minAmount*100)):100;
+ var sum='<div class="card"><div class="sum">'+
+   '<div><span>'+T('식사','Meals')+'</span><b>'+k.food+T('인분',' meals')+'</b></div>'+
+   (k.drinkQ?'<div><span>'+T('곁들이','Sides')+'</span><span>'+k.drinkQ+T('개','')+'</span></div>':'')+
+   '<div><span>'+T('메뉴 금액','Subtotal')+'</span><span>'+won(k.sub)+'</span></div>'+
+   '<div><span>'+T('단체 할인 '+Math.round(CFG.discountRate*100)+'%','Group discount '+Math.round(CFG.discountRate*100)+'%')+'</span><span>'+(k.disc?'−'+won(k.disc):T('해당 없음','—'))+'</span></div>'+
+   (k.cut?'<div><span>'+T('코드 할인','Code discount')+' '+esc(S.promo.code)+'</span><span>−'+won(k.cut)+'</span></div>':'')+
+   (k.pts?'<div><span>'+T('포인트 사용','Points used')+'</span><span>−'+won(k.pts)+'</span></div>':'')+
+   '<div><span>'+T('배달비','Delivery')+'</span><span>'+(k.feeOff?T('무료 · '+esc(S.promo.code),'free · '+esc(S.promo.code)):k.fee?won(k.fee):T('없음','free'))+'</span></div>'+
+   '<div class="total"><span>'+T('합계','Total')+'</span><span>'+won(k.total)+'</span></div></div>'+
+   promoBox()+pointsBox(k)+
+   '<div class="small muted">'+esc(L(c))+' '+T('최소 주문 금액 ','minimum ')+won(c.minAmount)+T(' 중 ',' of ')+won(k.goods)+T(' 담음',' added')+(c.min?T(' (약 '+c.min+'인분)',' (about '+c.min+' meals)'):'')+'</div><div class="bar"><i style="width:'+pct+'%"></i></div>'+
+   '<div class="small muted">'+fd(S.date)+' '+T('남은 수량','left on this day')+' '+left+T('인분','')+'</div></div>';
+ var note=bl?'<div class="note '+(bl.kind==='inq'?'warn':bl.kind==='cap'?'bad':'')+'">'+esc(bl.msg)+'</div>':'';
+ var btn;
+ if(!bl)btn='<button type="button" class="btn primary" data-act="go" data-to="addr">'+T('받는 곳 입력','Enter delivery details')+' · '+won(k.total)+'</button>';
+ else if(bl.kind==='inq')btn='<button type="button" class="btn warn" data-act="inq">'+T('문의하기','Send an inquiry')+'</button>';
+ else btn='<button type="button" class="btn primary" disabled>'+T('받는 곳 입력','Enter delivery details')+'</button>';
+ return {title:esc(L(c))+' · '+fd(S.date)+' · '+tlabel(S.slot,S.time),back:true,right:'my',body:'<h2 class="h">'+T('무엇을 몇 개?','What and how many?')+'</h2><div class="card" style="padding-block:4px">'+rows+'</div>'+sum,foot:note+btn};};
+
+var SPOTS=[['lobby','건물 1층 로비','Ground-floor lobby'],['gate','정문','Main gate'],['hall','강당·행사장','Hall / event room'],['office','사무실 앞','Office door'],['other','직접 적기','Other']];
+function cityMatches(sel,c){if(!sel||sel.manual||!c||!c.match)return true;return sel.sido===c.match||String(sel.sigungu||'').indexOf(c.match)===0;}
+SCR.addr=function(){
+ var k=calc(S.qty,S.city),u=S.user||{},F=S.form,sel=S.addrSel,c=city(S.city);
+ var top;
+ if(sel)top='<div class="card" style="gap:4px"><div class="row">'+(sel.zip?'<span class="pill p-paid">'+esc(sel.zip)+'</span>':'')+'<button type="button" class="link small" data-act="addrclear" style="margin-left:auto;padding:0">'+T('다시 찾기','Change')+'</button></div><b>'+esc(sel.road)+(sel.bld?' ('+esc(sel.bld)+')':'')+'</b>'+(sel.jibun?'<span class="small muted">'+T('지번 ','Lot ')+esc(sel.jibun)+'</span>':'')+(!cityMatches(sel,c)?'<div class="note warn small">'+T('주문하신 도시('+L(c)+')와 다른 곳입니다. 배달비·최소 수량이 달라질 수 있습니다.','This address is outside '+L(c)+'. Delivery fee and minimum may change.')+'</div>':'')+'</div>';
+ else if(window.daum&&window.daum.Postcode)top='<div class="field"><label>'+T('배달 주소 찾기','Find address')+'</label>'+(S.addrOpen?'<div class="pc" id="pc"></div>':'<button type="button" class="btn" data-act="addropen">🔍 '+T('도로명·건물명·지번으로 주소 검색','Search by street, building or lot')+'</button>')+'</div>';
+ else top='<div class="field"><label for="f-addr-road">'+T('배달 주소','Delivery address')+'</label><div class="row"><input class="input grow" id="f-addr-road" value="'+esc(F['f-addr-road']||'')+'" placeholder="'+T('도로명 주소 (예: 진주대로 501)','Street address')+'"><button type="button" class="btn sm" data-act="addrmanual">'+T('확인','OK')+'</button></div><span class="small muted">'+T('주소 검색을 불러오지 못해 직접 적는 칸으로 바꿨습니다.','Address search is unavailable, so please type the address.')+'</span></div>';
+ var more=sel?'<div class="field"><label for="f-addr2">'+T('상세 주소','Detailed address')+'</label><input class="input" id="f-addr2" value="'+esc(F['f-addr2']||'')+'" placeholder="'+T('건물 이름·층·호수 (예: 국제관 2층 201호)','Building, floor, room')+'"></div>'+
+  '<div class="field"><label>'+T('받는 장소','Handover spot')+'</label><div class="times">'+SPOTS.map(function(x){return '<button type="button" class="slot" data-act="spot" data-v="'+x[0]+'" aria-pressed="'+(S.spot===x[0])+'">'+T(x[1],x[2])+'</button>';}).join('')+'</div></div>'+
+  '<label class="check"><input type="checkbox" id="c-save"'+(F['c-save']===false?'':' checked')+'><span>'+T('다음 주문에도 이 배송지 쓰기','Save this address for next time')+'</span></label>':'';
+ return {title:T('받는 곳','Delivery details'),back:true,body:top+more+
+ '<div class="field"><label>'+T('받는 분','Recipient')+'</label><div class="card" style="padding:10px 12px;gap:2px"><b>'+esc(u.name||'')+'</b><span class="small muted">'+esc(u.phone||'')+' · '+esc(u.group||'')+'</span></div></div>'+
+ '<div class="field"><label for="f-req">'+T('요청 사항','Requests')+'</label><textarea class="input" id="f-req" placeholder="'+T('예: 도착 10분 전에 전화 주세요','e.g. Please call 10 minutes before arrival')+'">'+esc(F['f-req']||'')+'</textarea></div>'+
+ '<div class="field"><label>'+T('현금영수증','Cash receipt')+'</label>'+
+ '<label class="check"><input type="radio" name="rc" id="rc-p" value="phone"'+(S.receipt==='phone'?' checked':'')+'><span>'+T('개인 소득공제 — 가입한 휴대폰 번호로','Personal — to your registered phone number')+'</span></label>'+
+ '<label class="check"><input type="radio" name="rc" id="rc-b" value="biz"'+(S.receipt==='biz'?' checked':'')+'><span>'+T('지출증빙 — 사업자·기관 번호로 (대학·회사)','Business expense — to a business/institution number')+'</span></label>'+
+ (S.receipt==='biz'?'<input class="input" id="f-bizno" inputmode="numeric" value="'+esc(F['f-bizno']||'')+'" placeholder="'+T('사업자등록번호 (예: 123-45-67890)','Business registration number')+'">':'')+'</div>'+
+ '<div class="note ok small">'+T('주문을 보내면 사장님이 확인 후 수락합니다. 수락되면 입금 계좌를 알려 드리고, 입금이 확인되면 주문이 확정됩니다. 지금은 돈이 나가지 않습니다.','We\'ll review and approve your request first. Once approved you\'ll get our bank details; the order is confirmed when payment arrives. You won\'t be charged now.')+'</div>',
+ foot:'<button type="button" class="btn primary" data-act="place"'+(sel?'':' disabled')+'>'+(sel?T('주문 신청하기','Send order request')+' · '+won(k.total):T('배달 주소를 먼저 골라 주세요','Choose a delivery address first'))+'</button>'};};
+
+function embedPostcode(){
+ var el=document.getElementById('pc');if(!el||el.dataset.done)return;el.dataset.done='1';
+ new daum.Postcode({width:'100%',height:'100%',oncomplete:function(d){
+   S.addrSel={road:d.roadAddress||d.autoRoadAddress||d.address,jibun:d.jibunAddress||d.autoJibunAddress||'',zip:d.zonecode||'',bld:d.buildingName||'',sido:d.sido||'',sigungu:d.sigungu||''};
+   S.addrOpen=false;rerender();}}).embed(el,{autoClose:false});
+}
+
+function timeline(o){
+ var steps=[['requested',T('주문 신청','Request sent'),T('사장님이 '+CFG.acceptHours+'시간 안에 답을 드립니다.','We reply within '+CFG.acceptHours+' hours.')],
+  ['accepted',T('사장님 수락 · 입금 안내','Approved · pay by transfer'),T('안내받은 계좌로 입금해 주세요.','Transfer to the account we send you.')],
+  ['paid',T('입금 확인 · 주문 확정','Payment received · confirmed'),T('현금영수증을 발급해 드립니다.','We issue your cash receipt.')],
+  ['cooking',T('만드는 중','Preparing'),T('주방에서 준비를 시작했습니다.','Your food is being prepared.')],
+  ['out',T('출발','On the way'),T('배달 직원이 출발하면 여기 표시됩니다.','Shown here when the driver leaves.')],
+  ['delivered',T('배달 완료','Delivered'),'']];
+ var order=['requested','accepted','paid','cooking','out','delivered'],cur=order.indexOf(o.status);
+ if(cur<0)return '';
+ return '<ol class="tl">'+steps.map(function(s,i){var cls=i<cur||(i===cur&&o.status==='delivered')?'done':i===cur?'now':'';return '<li class="'+cls+'"><div class="dot">'+(cls==='done'?'✓':i+1)+'</div><div><b>'+s[1]+'</b>'+(s[2]?'<span>'+s[2]+'</span>':'')+'</div></li>';}).join('')+'</ol>';
+}
+function itemsMk(o){return '<div class="mk">'+o.items.map(function(l){return '<span>'+esc(iname(l))+'</span><b>'+l.qty+'</b>';}).join('')+'</div>';}
+SCR.status=function(){
+ var o=S.mine;if(!o)return SCR.my();
+ var extra='';
+ if(o.status==='rejected')extra='<div class="note bad">'+T('죄송합니다. 이번 날짜에는 주문을 받기 어렵습니다. 다른 날짜로 다시 신청해 주시면 꼭 챙기겠습니다.','We\'re sorry — we can\'t take this date. Please try another date and we\'ll make it work.')+'</div>';
+ if(o.status==='rejected_auto')extra='<div class="note bad">'+T('죄송합니다. 제때 확인해 드리지 못해 신청이 자동으로 닫혔습니다. 다른 날짜로 다시 신청해 주시면 꼭 챙기겠습니다.','We\'re sorry — we couldn\'t review your request in time, so it closed automatically. Please try again.')+'</div>';
+ if(o.status==='expired_unpaid')extra='<div class="note bad">'+T('입금 기한이 지나 주문이 자동으로 취소됐습니다. 다시 신청해 주시면 됩니다.','The payment deadline passed, so the order was cancelled. You\'re welcome to order again.')+'</div>';
+ if(o.status==='cancelled')extra='<div class="note bad">'+T('취소된 주문입니다.','This order was cancelled.')+'</div>';
+ if(o.status==='requested')extra='<div class="note ok">'+T('사장님 확인을 기다리는 중입니다. '+CFG.acceptHours+'시간 안에 답이 없으면 자동으로 닫힙니다.','Waiting for approval. If there\'s no reply within '+CFG.acceptHours+' hours the request closes automatically.')+'</div>';
+ if(o.status==='accepted'&&o.bank){
+   extra='<div class="card"><div class="small muted">'+T('입금 계좌','Bank transfer to')+EX()+'</div><div class="acct">'+esc(T(o.bank.name_ko,o.bank.name_en))+' '+esc(o.bank.account)+'</div><div class="small">'+T('예금주 ','Holder ')+esc(T(o.bank.holder_ko,o.bank.holder_en))+'</div>'+
+   '<div class="sum"><div class="total"><span>'+T('입금할 금액','Amount')+'</span><span>'+won(o.total)+'</span></div></div>'+
+   '<div class="note warn small">'+T('입금 기한 ','Pay by ')+'<b>'+fdt(o.payDue)+'</b>'+T(' — '+CFG.payHours+'시간 또는 주문 마감 중 빠른 때. 지나면 자동 취소됩니다.',' — '+CFG.payHours+' hours or the order deadline, whichever is first. Unpaid requests close automatically.')+'</div>'+
+   '<button type="button" class="btn sm" data-act="copy" data-v="'+esc(o.bank.account)+'">'+T('계좌번호 복사','Copy account number')+'</button></div>';}
+ if(o.status==='paid')extra='<div class="note ok">'+T('주문이 확정됐습니다. 배달 당일 출발하면 여기 표시됩니다.','Your order is confirmed. This page shows when the driver leaves.')+'</div>';
+ if(o.status==='delivered')extra=reviewBox(o)+'<button type="button" class="btn" data-act="reorder">'+T('같은 구성으로 다시 주문','Reorder the same')+'</button>';
+ var active=['requested','accepted','paid','out'].indexOf(o.status)>=0;
+ return {title:T('주문 ','Order ')+o.id,back:false,right:'my',body:
+  '<div class="card"><div class="row"><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span><span class="small muted">'+esc(T(o.cityName,(city(o.cityId)||{}).en||o.cityName))+' · '+fd(o.date)+' · '+tlabel(o.slot,o.time)+'</span></div>'+
+  itemsMk(o)+'<div class="sum"><div class="total"><span>'+T('합계','Total')+'</span><span>'+won(o.total)+'</span></div></div></div>'+extra+timeline(o),
+  foot:(active?'<button type="button" class="btn" data-act="refresh">↻ '+T('상태 새로고침','Refresh status')+'</button>':'<button type="button" class="btn" data-act="neworder">'+T('새 주문','New order')+'</button>')+
+   '<button type="button" class="btn" data-act="gohome">'+T('처음으로','Home')+'</button>'};};
+
+/* 4.7 후기 — 배달 끝난 주문에 별점+글. 회원 주문이면 올리는 순간 포인트 적립 */
+function starStr(n){return '★★★★★'.slice(0,n)+'<span style="color:var(--line)">'+'★★★★★'.slice(0,5-n)+'</span>';}
+function reviewBox(o){
+ if(o.review)return '<div class="card"><div class="lbl" style="margin:0">'+T('내 후기','My review')+'</div><div class="stars ro" aria-label="'+o.review.stars+T('점',' stars')+'">'+starStr(o.review.stars)+'</div><p class="rvtext">'+esc(o.review.text)+'</p>'+
+   (o.review.points?'<div class="small ok">✓ '+T(ptWon(o.review.points)+' 적립됐습니다. 다음 주문에서 쓰실 수 있어요.',ptWon(o.review.points)+' added — use them on your next order.')+'</div>':'')+'</div>';
+ if(!o.reviewable)return '';
+ var n=S.rvStars[o.id]||0,mo=CFG.pointMonths||6;
+ return '<div class="card"><div class="lbl" style="margin:0">'+T('후기 쓰기','Write a review')+'</div>'+
+  '<p class="small" style="margin:0">'+(o.reviewPts?T('후기를 남겨 주시면 <b>'+ptWon(o.reviewPts)+'</b>를 드려요. 다음 주문에서 1P = 1원으로 쓰실 수 있고, '+mo+'개월 동안 쓸 수 있습니다.','Leave a review and get <b>'+ptWon(o.reviewPts)+'</b> — 1 point = ₩1 off your next order, valid for '+mo+' months.'):T('드셔 보신 소감을 남겨 주세요. 다음 준비에 꼭 반영하겠습니다.','Tell us how it was — we read every review.'))+'</p>'+
+  '<div class="stars" role="group" aria-label="'+T('별점','Rating')+'">'+[1,2,3,4,5].map(function(i){return '<button type="button" data-act="star" data-v="'+i+'" aria-pressed="'+(i<=n)+'" aria-label="'+i+T('점',' stars')+'">★</button>';}).join('')+'</div>'+
+  '<textarea class="input" id="rv-text" maxlength="1000" placeholder="'+T('맛·양·도착 시간은 어떠셨나요? ('+(CFG.reviewMinChars||10)+'자 이상)','How were the taste, portions and timing? (at least '+(CFG.reviewMinChars||10)+' characters)')+'">'+esc(S.form['rv-text']||'')+'</textarea>'+
+  '<div class="small muted">'+T('올린 후기는 가게 홈페이지에 이름 없이 실릴 수 있습니다. '+fdt(o.reviewDue)+'까지 쓸 수 있어요.','Your review may appear on our website without your name. You can write it until '+fdt(o.reviewDue)+'.')+'</div>'+
+  '<button type="button" class="btn primary" data-act="review">'+T('후기 올리기','Post review')+'</button></div>';
+}
+
+SCR.inquiry=function(){
+ var c=city(S.city),k=calc(S.qty,S.city),u=S.user||{};
+ return {title:T('문의하기','Inquiry'),back:true,body:
+ '<div class="note warn">'+esc(S.inquiryReason)+'</div>'+
+ '<p class="muted small" style="margin:0">'+T('원하시는 내용을 남겨 주시면 사장님이 직접 견적을 드립니다. 지역별 문의가 쌓이면 배달 지역을 넓히는 데 씁니다.','Tell us what you need and the owner will send a quote. Inquiries also help us decide where to deliver next.')+'</p>'+
+ '<div class="field"><label for="i-where">'+T('지역·날짜·수량','Area, date, quantity')+'</label><input class="input" id="i-where" value="'+esc(S.form['i-where']!=null?S.form['i-where']:(c&&!c.out?L(c):'')+(S.date?' · '+fd(S.date):'')+(k.food?' · '+k.food+T('인분',' meals'):''))+'"></div>'+
+ '<div class="field"><label for="i-msg">'+T('남길 말','Message')+'</label><textarea class="input" id="i-msg" placeholder="'+T('예: 강릉에서 30명 행사가 있습니다','e.g. We have an event for 30 people in Gangneung')+'">'+esc(S.form['i-msg']||'')+'</textarea></div>'+
+ '<div class="field"><label>'+T('연락처','Contact')+'</label><div class="small">'+esc(u.phone||'')+'</div></div>',
+ foot:'<button type="button" class="btn primary" data-act="sendinq">'+T('문의 보내기','Send inquiry')+'</button>'};};
+
+SCR.my=function(){
+ var u=S.user||{};
+ var list=S.myOrders.length?S.myOrders.map(function(o){return '<button type="button" class="ocard" data-act="myopen" data-id="'+esc(o.id)+'"><div class="top"><span class="who">'+esc(o.id)+'</span><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span></div><div class="meta">'+esc(T(o.cityName,(city(o.cityId)||{}).en||o.cityName))+' · '+fd(o.date)+' · '+won(o.total)+'</div></button>';}).join(''):'<p class="muted" style="margin:0">'+T('아직 주문이 없습니다.','No orders yet.')+'</p>';
+ return {title:T('내 정보·주문','My account'),back:true,body:
+ '<div class="card"><dl class="kv"><dt>'+T('이름','Name')+'</dt><dd>'+esc(u.name)+'</dd><dt>'+T('단체','Organization')+'</dt><dd>'+esc(u.group)+'</dd><dt>'+T('휴대폰','Phone')+'</dt><dd>'+esc(u.phone)+'</dd><dt>'+T('로그인','Login')+'</dt><dd>'+T('휴대폰 번호','Phone number')+'</dd><dt>'+T('알림','Alerts')+'</dt><dd>'+T('이 화면에서 확인 (문자 알림은 준비 중)','Check here (SMS alerts coming soon)')+'</dd></dl></div>'+
+ (S.points?'<div class="card"><div class="row"><span class="lbl" style="margin:0">'+T('내 포인트','My points')+'</span><b style="margin-left:auto;font-size:18px">'+ptWon(S.points.balance)+'</b></div>'+ptExpLine(S.points)+
+   '<div class="small muted">'+T('배달 끝난 주문에 후기를 쓰시면 메뉴 금액의 '+Math.round((S.points.rate||0.01)*100)+'%를 드려요. 다음 주문에서 1P = 1원, 적립한 날부터 '+(S.points.months||6)+'개월.','Review a delivered order to get '+Math.round((S.points.rate||0.01)*100)+'% of the menu amount back as points — 1 point = ₩1, valid '+(S.points.months||6)+' months.')+'</div></div>':'')+
+ '<div class="lbl" style="margin:4px 0 -6px">'+T('주문 내역','Orders')+'</div>'+list+
+ (S.delConfirm?'<div class="note bad">'+T('계정을 지우면 이 기기의 가입 정보와 주문 내역이 지워지고, 입금 전 주문은 취소됩니다. 세금 신고에 필요한 거래 기록은 법에서 정한 기간만 보관합니다.','Deleting removes your details from this device and cancels unpaid orders. Transaction records required for tax are kept only for the legally required period.')+'<div class="row" style="margin-top:8px"><button type="button" class="btn sm danger" data-act="delacct">'+T('삭제','Delete')+'</button><button type="button" class="btn sm" data-act="delcancel">'+T('취소','Cancel')+'</button></div></div>':'<button type="button" class="link" data-act="deltry" style="align-self:flex-start;color:var(--danger)">'+T('계정 삭제','Delete account')+'</button>'),
+ foot:'<button type="button" class="btn primary" data-act="neworder">'+T('새 주문','New order')+'</button><button type="button" class="btn" data-act="gohome">'+T('처음으로','Home')+'</button>'};};
+
+/* owner */
+function who(o){return o.group||o.name||'';}
+function ocard(o){return '<button type="button" class="ocard" data-act="odetail" data-id="'+esc(o.id)+'"><div class="top"><span class="who">'+esc(who(o))+(o.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span></div><div class="meta">'+esc(o.id)+' · '+fd(o.date)+' '+tlabel(o.slot,o.time)+' · '+esc(o.cityName)+'</div><div class="meta">'+o.food+T('인분',' meals')+' · '+won(o.total)+' · '+ago(o.createdMs)+'</div></button>';}
+function loading(title){return {title:title,back:false,right:'reload',body:'<p class="muted">'+T('불러오는 중…','Loading…')+'</p>',foot:''};}
+SCR.o_list=function(){
+ if(S.orders===null)return loading(T('사장님 — 단체주문','Owner — group orders'));
+ var f=S.ofilter,list=S.orders.filter(function(o){return f==='all'||(f==='closed'?CLOSED.indexOf(o.status)>=0||o.status==='delivered':o.status===f);});
+ if(S.oday)list=list.filter(function(o){return o.date===S.oday;});
+ var req=S.orders.filter(function(o){return o.status==='requested';}).length;
+ var caps=S.ownerAvail.map(function(a){var p=a.cap?Math.min(100,Math.round(a.booked/a.cap*100)):100;return '<div class="cap"><span>'+fd(a.date)+'</span><div class="bar'+(a.booked>=a.cap||a.holiday?' full':'')+'"><i style="width:'+(a.holiday?100:p)+'%"></i></div><span class="n">'+(a.holiday?T('휴무','off'):a.booked+'/'+a.cap)+'</span></div>';}).join('');
+ var tabs=[['all',T('전체','All')],['requested',L(ST.requested)],['accepted',L(ST.accepted)],['paid',L(ST.paid)],['cooking',L(ST.cooking)],['closed',T('끝난 주문','Done')],['reviews',T('후기','Reviews')+(S.reviews.length?' '+S.reviews.length:'')]].map(function(t){return '<button type="button" data-act="ofilter" data-f="'+t[0]+'" aria-pressed="'+(f===t[0])+'">'+t[1]+'</button>';}).join('');
+ return {title:T('사장님 — 단체주문','Owner — group orders'),back:false,right:'reload',body:
+ (req?'<div class="note warn"><b>'+T('수락을 기다리는 주문 '+req+'건','Orders awaiting approval: '+req)+'</b><br><span class="small">'+T(CFG.acceptHours+'시간 안에 안 누르면 자동 거절됩니다. '+CFG.remindHours+'시간마다 메일로 다시 알려 드립니다.','Unanswered requests auto-decline after '+CFG.acceptHours+' hours. Email reminder every '+CFG.remindHours+' hours.')+'</span></div>':'')+
+ calendarBox('oday',S.oday,true)+
+ (S.oday?'<div class="lbl" style="margin:2px 0 -6px">'+fd(S.oday)+T(' 예약',' bookings')+'</div>':'')+
+ '<details class="card"><summary class="lbl" style="margin:0;cursor:pointer">'+T('날짜별 찬 수량 (점심+저녁)','Booked per day (lunch + dinner)')+'</summary>'+caps+'</details>'+
+ '<div class="tabs">'+tabs+'</div>'+(f==='reviews'?reviewList():list.length?list.map(ocard).join(''):'<p class="muted">'+T('해당 주문이 없습니다.','No orders here.')+'</p>')+
+ '<p class="small muted" style="margin:0">'+T('메뉴·가격·배달비·최소 수량·휴무일·하루 상한은 구글시트에서 고칩니다.','Menu, prices, delivery fees, minimums, holidays and daily limit are edited in Google Sheets.')+'</p>',foot:''};};
+/* ── 달력 — 예약이 어느 날에 몇 건 있는지 한눈에. 날짜를 누르면 그날 주문만 아래에 뜬다. ── */
+function ymd(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function monthKey(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);}
+function calMonth(){
+ // 처음 열 때는 「앞으로 올 예약 중 가장 이른 것」이 있는 달을 보여 준다.
+ // (배달일은 보통 2~14일 뒤라 월말에는 다음 달이다 — 이번 달만 보여 주면 예약이 없는 것처럼 보인다)
+ if(!S.omonth){
+  var t=ymd(new Date(nowMs())),soon=null;
+  (S.orders||[]).forEach(function(o){ if(CLOSED.indexOf(o.status)<0&&o.date>=t&&(!soon||o.date<soon))soon=o.date; });
+  S.omonth=soon?soon.slice(0,7):monthKey(new Date(nowMs()));
+ }
+ var p=S.omonth.split('-');return {y:+p[0],m:+p[1]};
+}
+/** 달력 한 벌을 사장님·직원이 같이 쓴다.
+ *  act   = 날짜를 눌렀을 때 보낼 이름('oday' 사장님 · 'sday' 직원)
+ *  sel   = 지금 고른 날짜
+ *  showAll = 「전체 보기」 단추를 둘지(직원은 날짜별로만 보므로 안 둔다) */
+function calendarBox(act, sel, showAll){
+ act=act||'oday'; sel=sel===undefined?S.oday:sel;
+ var mm=calMonth(),first=new Date(mm.y,mm.m-1,1),days=new Date(mm.y,mm.m,0).getDate(),lead=first.getDay();
+ var today=ymd(new Date(nowMs()));
+ var byDay={};(S.orders||[]).forEach(function(o){(byDay[o.date]=byDay[o.date]||[]).push(o);});
+ var avail={};(S.ownerAvail||[]).forEach(function(a){avail[a.date]=a;});
+ var cells='';
+ for(var i=0;i<lead;i++)cells+='<div class="d pad"></div>';
+ for(var day=1;day<=days;day++){
+  var key=mm.y+'-'+('0'+mm.m).slice(-2)+'-'+('0'+day).slice(-2);
+  var list=(byDay[key]||[]).filter(function(o){return CLOSED.indexOf(o.status)<0;});
+  var av=avail[key],food=0;
+  list.forEach(function(o){food+=o.food||0;});
+  var dots=list.slice(0,6).map(function(o){return '<i class="dot2 '+(o.status==='requested'?'requested':'')+'"></i>';}).join('');
+  var cls='d'+(new Date(mm.y,mm.m-1,day).getDay()===0?' sun':'')+(key===today?' today':'')+(sel===key?' on':'')+(av&&av.holiday?' off':'');
+  var q=list.length?'<span class="q">'+list.length+T('건','')+'</span><span class="c">'+food+T('인분',' meals')+'</span>':'';
+  var capline=av&&av.holiday?'<span class="c">'+T('휴무','off')+'</span>':(av&&list.length&&food>=av.cap?'<span class="c warn">'+T('꽉 참','full')+'</span>':'');
+  cells+='<button type="button" class="'+cls+'" data-act="'+act+'" data-d="'+key+'"><span class="n">'+day+'</span>'+q+capline+'<span class="dots">'+dots+'</span></button>';
+ }
+ var label=S.lang==='ko'?mm.y+'년 '+mm.m+'월':new Date(mm.y,mm.m-1,1).toLocaleString('en-US',{month:'long',year:'numeric'});
+ var wk=(S.lang==='ko'?['일','월','화','수','목','금','토']:['S','M','T','W','T','F','S']).map(function(w){return '<span>'+w+'</span>';}).join('');
+ return '<div class="card cal"><div class="head"><button type="button" class="nav" data-act="omonth" data-v="-1" aria-label="'+T('이전 달','Previous month')+'">‹</button><b>'+label+'</b>'+
+  (showAll&&sel?'<button type="button" class="chipbtn" data-act="'+act+'" data-d="">'+T('전체 보기','Show all')+'</button>':'')+
+  '<button type="button" class="nav" data-act="omonth" data-v="1" aria-label="'+T('다음 달','Next month')+'">›</button></div>'+
+  '<div class="wk">'+wk+'</div><div class="grid">'+cells+'</div>'+
+  '<div class="legend"><span><i style="background:var(--saffron)"></i>'+T('수락 대기','Awaiting')+'</span><span><i style="background:var(--pine)"></i>'+T('진행 중·확정','Active')+'</span><span>'+T('날짜를 누르면 그날 예약만 보입니다.','Tap a day to filter.')+'</span></div></div>';
+}
+function findOrder(id){return (S.orders||[]).filter(function(x){return x.id===id;})[0];}
+/* 4.7 사장님 — 후기 목록 · 숨기기(숨겨도 준 포인트는 그대로, 09-26 확정) */
+function rcard(r){return '<div class="ocard"><div class="top"><span class="who"><span class="stars ro">'+starStr(r.stars)+'</span> '+esc(r.who)+(r.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span>'+(r.hidden?'<span class="pill p-rejected">'+T('숨김','Hidden')+'</span>':'')+'</div>'+
+ '<div class="meta">'+esc(r.orderId)+' · '+esc(r.cityName)+' · '+ago(r.at)+' · '+ptWon(r.points)+'</div><p class="rvtext">'+esc(r.text)+'</p>'+
+ '<div class="row" style="justify-content:flex-end"><button type="button" class="btn sm'+(r.hidden?'':' danger')+'" data-act="rvhide" data-id="'+esc(r.id)+'" data-h="'+(r.hidden?0:1)+'">'+(r.hidden?T('다시 보이기','Show again'):T('숨기기','Hide'))+'</button></div></div>';}
+function reviewList(){
+ var vis=S.reviews.filter(function(r){return !r.hidden&&!r.isTest;}),sum=0;vis.forEach(function(r){sum+=r.stars;});
+ return '<div class="note ok small">'+T('홈페이지에 보이는 후기 '+vis.length+'건'+(vis.length?' · 평균 ★'+(Math.round(sum/vis.length*10)/10):'')+'. 이상한 후기는 「숨기기」 — 숨겨도 이미 드린 포인트는 그대로입니다.','Visible reviews: '+vis.length+(vis.length?' · avg ★'+(Math.round(sum/vis.length*10)/10):'')+'. Hide anything inappropriate — points already given stay.')+'</div>'+
+  (S.reviews.length?S.reviews.map(rcard).join(''):'<p class="muted">'+T('아직 후기가 없습니다.','No reviews yet.')+'</p>');
+}
+SCR.o_detail=function(){
+ var o=findOrder(S.oid),act='';if(!o)return SCR.o_list();
+ var rno=o.receiptNo||o.phone;
+ var receipt='<div class="receipt"><div class="small muted">'+T('매장 단말기에 이대로 입력 — 현금영수증 ','Enter on the store terminal — cash receipt ')+'('+(o.receiptType==='biz'?T('지출증빙','business'):T('소득공제','personal'))+')</div><div class="big">'+esc(rno)+'</div><div class="big">'+won(o.total)+'</div></div>';
+ if(o.status==='requested')act='<div class="row"><button type="button" class="btn danger" data-act="set" data-to="rejected">'+T('거절','Decline')+'</button><button type="button" class="btn primary" data-act="set" data-to="accepted">'+T('수락 → 입금 안내','Approve → payment details')+'</button></div>';
+ if(o.status==='accepted')act='<button type="button" class="btn primary" data-act="set" data-to="paid">'+T('입금 확인 (은행 알림 보고 누르기)','Mark as paid (after bank alert)')+'</button>';
+ if(o.status==='paid')act='<div class="row"><button type="button" class="btn" data-act="set" data-to="out">'+T('바로 출발','Leaving now')+'</button><button type="button" class="btn primary" data-act="set" data-to="cooking">'+T('만드는 중','Start preparing')+'</button></div>';
+ if(o.status==='cooking')act='<button type="button" class="btn primary" data-act="set" data-to="out">'+T('출발 (직원 대신 누르기)','Leaving now (for staff)')+'</button>';
+ if(o.status==='out')act='<button type="button" class="btn" data-act="set" data-to="delivered">'+T('배달 완료 (직원 대신 누르기)','Delivered (for staff)')+'</button>';
+ var due=o.status==='requested'?'<p class="small muted" style="margin:0">'+T('수락 기한: ','Approve by: ')+'<b>'+fdt(Math.min(o.acceptDue,o.deadline))+'</b></p>':o.status==='accepted'?'<p class="small muted" style="margin:0">'+T('손님 입금 기한: ','Payment due: ')+'<b>'+fdt(o.payDue)+'</b>'+T(' — 지나면 자동 취소.',' — auto-cancels after.')+'</p>':'';
+ return {title:esc(o.id),back:true,body:
+ '<div class="card"><div class="row"><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span>'+(o.isTest?'<span class="pill p-test">'+T('시험','test')+'</span>':'')+'<span class="small muted">'+ago(o.createdMs)+'</span></div>'+
+ '<dl class="kv"><dt>'+T('단체','Org.')+'</dt><dd><b>'+esc(o.group)+'</b></dd><dt>'+T('이름','Name')+'</dt><dd>'+esc(o.name)+'</dd><dt>'+T('연락처','Phone')+'</dt><dd>'+(o.phone?'<a class="tel" href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a>':'')+'</dd><dt>'+T('배달','Delivery')+'</dt><dd>'+fd(o.date)+' '+tlabel(o.slot,o.time)+' · '+esc(o.cityName)+'</dd><dt>'+T('주소','Address')+'</dt><dd>'+esc(o.addr)+(o.spot?' · '+esc(o.spot):'')+'</dd>'+(o.request?'<dt>'+T('요청','Request')+'</dt><dd>'+esc(o.request)+'</dd>':'')+'</dl></div>'+
+ '<div class="card">'+itemsMk(o)+
+ '<div class="sum"><div><span>'+T('메뉴 금액','Subtotal')+'</span><span>'+won(o.sub)+'</span></div><div><span>'+T('할인','Discount')+'</span><span>−'+won(o.disc)+'</span></div>'+(o.codeCut?'<div><span>'+T('코드 할인','Code discount')+' '+esc(o.code)+'</span><span>−'+won(o.codeCut)+'</span></div>':'')+(o.pointsUsed?'<div><span>'+T('포인트 사용','Points used')+'</span><span>−'+won(o.pointsUsed)+'</span></div>':'')+'<div><span>'+T('배달비','Delivery')+EX()+'</span><span>'+(o.codeFeeOff?T('무료 · '+esc(o.code),'free · '+esc(o.code)):won(o.fee))+'</span></div><div class="total"><span>'+T('합계','Total')+'</span><span>'+won(o.total)+'</span></div></div></div>'+
+ (o.status==='accepted'||o.status==='paid'?receipt:'')+due+
+ (o.review?'<div class="card"><div class="lbl" style="margin:0">'+T('손님 후기','Customer review')+(o.review.hidden?' · '+T('숨김','hidden'):'')+'</div><div class="stars ro">'+starStr(o.review.stars)+'</div><p class="rvtext">'+esc(o.review.text)+'</p><div class="small muted">'+ptWon(o.review.points)+T(' 드림',' given')+'</div></div>':''),
+ foot:act};};
+
+/* staff */
+SCR.s_today=function(){
+ if(S.orders===null)return loading(T('직원 — 배달일별 할 일','Staff — by delivery day'));
+ var days={};S.orders.forEach(function(o){(days[o.date]=days[o.date]||[]).push(o);});
+ var keys=Object.keys(days).sort();
+ // 처음 열면 가장 이른 배달일. 달력에서 배달 없는 날을 눌러도 그날을 그대로 보여 준다(엉뚱한 날로 튀지 않게)
+ if(S.sday===null)S.sday=keys.length?keys[0]:null;
+ var cal=calendarBox('sday',S.sday,false);
+ if(S.sday===null)return {title:T('직원 — 배달일별 할 일','Staff — by delivery day'),back:false,right:'reload',body:calendarBox('sday',null,false)+'<p class="muted">'+T('확정된 주문이 없습니다.','No confirmed orders.')+'</p>',foot:''};
+ var list=days[S.sday]||[],make='';
+ ['lunch','dinner'].forEach(function(s){var tot={},nm={};list.filter(function(o){return o.slot===s;}).forEach(function(o){o.items.forEach(function(l){tot[l.id]=(tot[l.id]||0)+l.qty;nm[l.id]=l;});});
+   var ks=Object.keys(tot);
+   if(ks.length)make+='<div class="card"><div class="lbl" style="margin:0">'+L(SLOTS[s])+' — '+T('만들 것','to prepare')+'</div><div class="mk">'+ks.map(function(id){return '<span>'+esc(iname(nm[id]))+'</span><b>'+tot[id]+'</b>';}).join('')+'</div></div>';});
+ var dl=list.map(function(o){var btn=o.status==='paid'?'<button type="button" class="btn sm" data-act="set" data-id="'+esc(o.id)+'" data-to="cooking">'+T('만드는 중','Preparing')+'</button>':o.status==='cooking'?'<button type="button" class="btn sm primary" data-act="set" data-id="'+esc(o.id)+'" data-to="out">'+T('출발','Leaving now')+'</button>':o.status==='out'?'<button type="button" class="btn sm primary" data-act="set" data-id="'+esc(o.id)+'" data-to="delivered">'+T('배달 완료','Delivered')+'</button>':'<span class="pill p-delivered">'+L(ST.delivered)+'</span>';
+   return '<div class="ocard"><div class="top"><span class="who">'+esc(who(o))+(o.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status])+'</span></div><div class="meta">'+tlabel(o.slot,o.time)+' · '+esc(o.addr)+(o.spot?' · '+esc(o.spot):'')+'</div><div class="meta">'+(o.phone?'<a class="tel" href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a>':'')+(o.request?' · '+esc(o.request):'')+'</div><div class="row" style="justify-content:flex-end">'+btn+'</div></div>';}).join('');
+ return {title:T('직원 — 배달일별 할 일','Staff — by delivery day'),back:false,right:'reload',body:cal+
+  '<div class="lbl" style="margin:2px 0 -6px">'+(S.sday?fd(S.sday)+T(' 할 일',' — to do'):'')+'</div>'+make+'<div class="lbl" style="margin:4px 0 -6px">'+T('배달 목록','Deliveries')+'</div>'+(dl||'<p class="muted">'+T('이 날은 배달이 없습니다.','No deliveries on this day.')+'</p>')+'<p class="small muted" style="margin:0">'+T('「출발」·「배달 완료」를 누르면 손님 주문 화면에 바로 표시됩니다.','Tapping Leaving now / Delivered updates the customer\'s order page.')+'</p>',foot:''};};
+
+SCR.badkey=function(){return {title:esc(T(BRAND.name_ko,BRAND.name_en)),back:false,body:'<div class="note bad">'+T('주소가 맞지 않습니다. 받으신 링크를 처음부터 끝까지 그대로 여셨는지 확인해 주세요.','This link is not valid. Please open the full link you received.')+'</div>',foot:''};};
+
+/* ── 그리기 ── */
+var HOME={customer:'start',owner:'o_list',staff:'s_today'};
+function render(){
+ var s=SCR[S.screen](),bar=document.getElementById('appbar'),scr=document.getElementById('screen'),ft=document.getElementById('foot');
+ var tb=document.getElementById('testbar');tb.hidden=!CFG.sample;tb.textContent=T('시험판 — 노란 「예시」 표시가 붙은 값은 아직 확정 전입니다','Test version — values marked "sample" are not final');
+ if(s.bar===false){
+   // 머리말을 안 쓰는 화면(가입·로그인)에서도 연락 단추는 오른쪽 위에 남긴다
+   var only=contactBtns();
+   bar.hidden=!only;bar.className='appbar bare';bar.innerHTML=only?'<div class="title"></div>'+only:'';
+ }else{bar.hidden=false;bar.className='appbar';
+   var right=contactBtns();
+   if(s.right==='my'&&S.user)right+='<button type="button" class="chipbtn" data-act="my">'+T('내 주문','My orders')+'</button>';
+   if(s.right==='reload')right+='<button type="button" class="chipbtn" data-act="reload">↻ '+T('새로고침','Refresh')+'</button>';
+   if(ROLE==='customer')right+='<button type="button" class="chipbtn" data-act="lang" data-l="'+(S.lang==='ko'?'en':'ko')+'">'+(S.lang==='ko'?'EN':'한')+'</button>';
+   bar.innerHTML=(s.back&&S.hist.length?'<button type="button" class="iconbtn" data-act="back" aria-label="'+T('뒤로','Back')+'">‹</button>':'')+'<div class="title">'+(s.title||'')+'</div>'+right;}
+ document.getElementById('phone').classList.toggle('wide',ROLE!=='customer');
+ scr.innerHTML=s.body;scr.scrollTop=0;
+ ft.innerHTML=s.foot||'';ft.hidden=!s.foot;
+ document.documentElement.lang=S.lang;
+ if(S.screen==='addr'&&S.addrOpen&&!S.addrSel)embedPostcode();
+}
+/** 오른쪽 위 연락 단추 — 전화·인스타그램·네이버지도. 시트 settings 가 비면 안 뜬다. */
+function contactBtns(){
+ var h='';
+ if(CONTACT.phone)h+='<a class="cbtn tel" href="tel:'+esc(CONTACT.phone.replace(/[^0-9+]/g,''))+'" title="'+esc(CONTACT.phone)+'" aria-label="'+T('전화 걸기 ','Call ')+esc(CONTACT.phone)+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.2 1l-2.2 2.2z"/></svg><span>'+T('전화','Call')+'</span></a>';
+ if(CONTACT.insta)h+='<a class="cbtn" href="'+esc(CONTACT.insta)+'" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 3.1A6.7 6.7 0 1 0 18.7 12 6.7 6.7 0 0 0 12 5.3zm0 11A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3zm6.9-11.2a1.6 1.6 0 1 1-1.6-1.6 1.6 1.6 0 0 1 1.6 1.6z"/></svg><span>'+T('인스타','Insta')+'</span></a>';
+ if(CONTACT.map)h+='<a class="cbtn map" href="'+esc(CONTACT.map)+'" target="_blank" rel="noopener" aria-label="'+T('네이버지도에서 보기','Open in Naver Map')+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/></svg><span>'+T('지도','Map')+'</span></a>';
+ return h;
+}
+/* 다시 그리기 — 글자를 치던 칸은 자리(커서 위치까지) 그대로 돌려놓는다. 개수를 직접 칠 때 필요(09-20) */
+function rerender(){
+ var sc=document.getElementById('screen'),y=sc.scrollTop;
+ var ae=document.activeElement,fid=ae&&ae.id?ae.id:'',pos=null;
+ try{if(fid&&ae.selectionStart!=null)pos=[ae.selectionStart,ae.selectionEnd];}catch(x){}
+ render();sc.scrollTop=y;
+ if(!fid)return;
+ var el=document.getElementById(fid);
+ if(!el||typeof el.focus!=='function')return;
+ REFOCUS=true;el.focus();REFOCUS=false;
+ try{if(pos)el.setSelectionRange(pos[0],pos[1]);}catch(x){}
+}
+/* 다시 그리느라 내가 도로 맞춘 자리인가 — 그때는 글자를 통째로 잡지 않는다 */
+var REFOCUS=false;
+document.addEventListener('focusin',function(e){
+ var t=e.target;
+ if(REFOCUS||!t.dataset||!(t.dataset.qty||t.dataset.pts))return;
+ // 개수 칸을 누르면 들어 있던 숫자를 통째로 잡는다 — 「0」 옆에 쳐서 260 이 되는 일을 막는다.
+ // 누를 때는 focusin 뒤에 커서가 다시 잡히므로 한 박자 뒤에 잡는다.
+ setTimeout(function(){if(document.activeElement===t){try{t.select();}catch(x){}}},0);
+});
+function go(to){S.hist.push(S.screen);S.screen=to;render();}
+function home(to){S.hist=[];S.screen=to;render();}
+var tt;function toast(m,ms){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(hideToast,ms||2600);}
+function hideToast(){document.getElementById('toast').classList.remove('on');}
+function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+
+/* 서버에서 새로 받아 오기 */
+function loadMine(openLatest){
+ var tk=tokens();if(!tk.length&&!S.sess){S.myOrders=[];return Promise.resolve();}
+ return api('apiMyOrders',mineArg()).then(function(r){if(!r||!r.ok)return;applyBoot(r.boot);S.myOrders=r.orders;S.points=r.points||null;
+   if(S.mine){var m=r.orders.filter(function(o){return o.id===S.mine.id;})[0];if(m)S.mine=m;}
+   if(openLatest){var a=r.orders.filter(function(o){return ['requested','accepted','paid','out'].indexOf(o.status)>=0;})[0];if(a&&(S.screen==='where'||S.screen==='start')&&!S.date){S.mine=a;home('status');return;}}
+   if(['status','my','where','menu'].indexOf(S.screen)>=0)rerender();});
+}
+function loadStaff(){
+ var fn=ROLE==='owner'?'apiOwnerData':'apiStaffData';
+ return api(fn,KEY).then(function(r){if(!r||!r.ok){toast(r&&r.err?T(r.err.ko,r.err.en):T('불러오지 못했습니다.','Could not load.'),4000);S.orders=[];rerender();return;}
+   S.orders=r.orders;if(r.avail)S.ownerAvail=r.avail;if(r.reviews)S.reviews=r.reviews;if(r.nowMs)OFFSET=r.nowMs-Date.now();rerender();},function(){toast(T('불러오지 못했습니다. 새로고침을 눌러 주세요.','Could not load. Tap Refresh.'),4000);});
+}
+function handleOrderErr(e){
+ if(e.code==='login'){toast(T(e.ko,e.en),5000);S.verified=false;S.codeSent=false;S.vt='';S.form['f-name']=(S.user||{}).name||'';S.form['f-group']=(S.user||{}).group||'';S.form['f-phone']=(S.user||{}).phone||'010-';go('signup');return;}
+ // 코드가 그 사이 막혔으면(다 쓰임·기한 지남) 코드를 떼고 메뉴 화면으로 돌려보낸다
+ if(String(e.code||'').indexOf('pt_')===0){S.ptUse=0;S.ptRaw=null;toast(T(e.ko,e.en),5000);loadMine(false);home('menu');return;}
+ if(String(e.code||'').indexOf('code_')===0){S.promo=null;S.promoBad=true;S.promoMsg=T(e.ko,e.en);toast(T(e.ko,e.en),5000);home('menu');return;}
+ if(e.code==='below_min'||e.code==='out_of_area'){S.inquiryReason=T(e.ko,e.en);go('inquiry');return;}
+ toast(T(e.ko,e.en),5000);
+ if(['cap','deadline','holiday','bad_date','bad_time'].indexOf(e.code)>=0){
+   api('apiBoot').then(function(b){applyBoot(b);if(e.code!=='cap')S.date=null;home('where');});}
+}
+
+document.addEventListener('click',function(e){
+ var el=e.target.closest('[data-act]');if(!el||el.disabled)return;var a=el.dataset.act;
+ if(a==='lang'){S.lang=el.dataset.l;lsSet('lang',S.lang);rerender();return;}
+ if(a==='go'){var to=el.dataset.to;
+   if(to==='addr'&&!S.addrSel){var sv=lsGet('addr',null);if(sv&&sv.sel){S.addrSel=sv.sel;S.form['f-addr2']=sv.detail||'';S.spot=sv.spot||'';}}
+   go(to);return;}
+ if(a==='back'){S.screen=S.hist.pop()||HOME[ROLE];render();return;}
+ if(a==='gohome'){home(HOME[ROLE]);return;}
+ if(a==='logout'){S.sess=null;lsSet('sess',null);S.user=null;lsSet('profile',null);home('start');toast(T('로그아웃했습니다.','Signed out.'));return;}
+ if(a==='toast'){toast(el.dataset.m);return;}
+ if(a==='social'){toast(T('이 로그인은 준비 중입니다. 지금은 휴대폰 번호로 가입해 주세요.','This sign-in is not ready yet. Please sign up with your phone number.'),4500);return;}
+ if(a==='code'){var ph=(S.form['f-phone']||'').replace(/\D/g,'');if(ph.length<10){toast(T('휴대폰 번호를 끝까지 넣어 주세요.','Enter your full mobile number.'));return;}
+   call('apiSendCode',{phone:S.form['f-phone'],lang:S.lang},T('인증번호를 보내는 중…','Sending the code…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);return;}
+     S.codeAt=Date.now();S.codeSent=true;S.form['f-code']='';rerender();
+     if(r.dry)toast(T('(시험 모드) 문자 대신 여기 표시 — 인증번호 '+r.code,'(Test mode) Your SMS code would be '+r.code),8000);
+     else toast(T('문자로 인증번호를 보냈습니다.','We texted you a code.'),3000);});return;}
+ if(a==='verify'){if(Date.now()-S.codeAt>300000){toast(T('시간이 지났습니다. 다시 받아 주세요.','Code expired. Please resend.'));return;}
+   call('apiVerifyCode',{phone:S.form['f-phone'],code:(S.form['f-code']||'').trim()},T('확인하는 중…','Checking…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),4000);return;}
+     S.vt=r.vt;S.verified=true;
+     if(r.known){if(!(S.form['f-name']||'').trim())S.form['f-name']=r.known.name;if(!(S.form['f-group']||'').trim())S.form['f-group']=r.known.group;if(r.known.mkt)S.form['c-mkt']=true;S.form['c-req']=true;}
+     rerender();toast(r.known?T('인증됐습니다. 전에 가입하신 정보를 불러왔습니다.','Verified. We loaded your saved details.'):T('인증됐습니다.','Verified.'));});return;}
+ if(a==='signup'){if(!S.verified)return;if(!(S.form['f-name']||'').trim()){toast(T('이름을 넣어 주세요.','Please enter your name.'));return;}
+   if(!S.form['c-req']){toast(T('[필수] 개인정보 동의에 체크해 주세요.','Please accept the required consent.'));return;}
+   call('apiSignup',{vt:S.vt,sess:S.sess,name:S.form['f-name'].trim(),group:(S.form['f-group']||'').trim(),mkt:!!S.form['c-mkt'],consent:true},T('가입하는 중…','Signing up…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);if(r.err.code==='verify'){S.verified=false;S.codeSent=false;S.vt='';rerender();}return;}
+     setLogin(r.sess,r.user);S.social='';home('where');toast(T('가입했습니다.','Signed up.'));loadMine(true);});return;}
+ if(a==='time'){S.slot=el.dataset.s;S.time=el.dataset.t;rerender();return;}
+ if(a==='addropen'){S.addrOpen=true;rerender();return;}
+ if(a==='addrclear'){S.addrSel=null;S.addrOpen=true;rerender();return;}
+ if(a==='addrmanual'){var rd=val('f-addr-road');if(rd.length<4){toast(T('주소를 조금 더 자세히 적어 주세요.','Please enter a fuller address.'));return;}S.addrSel={road:rd,jibun:'',zip:'',bld:'',manual:true};rerender();return;}
+ if(a==='spot'){S.spot=el.dataset.v;rerender();return;}
+ if(a==='date'){S.date=el.dataset.d;rerender();return;}
+ if(a==='q'){var id=el.dataset.id;delete S.qraw[id];S.qty[id]=Math.max(0,Math.min(2000,(S.qty[id]||0)+Number(el.dataset.d)));rerender();return;}
+ if(a==='promo'){var pc=(val('f-promo')||'').trim();
+   if(!pc){toast(T('할인 코드를 넣어 주세요.','Please enter a code.'));return;}
+   var u1=S.user||{};
+   call('apiCheckCode',{code:pc,cityId:S.city,items:S.qty,phone:u1.phone},T('코드를 확인하는 중…','Checking the code…')).then(function(r){
+     if(!r)return;
+     if(!r.ok){S.promo=null;S.promoBad=true;S.promoMsg=T(r.err.ko,r.err.en);rerender();return;}
+     S.promo={code:r.code,kind:r.kind,value:r.value,minAmount:r.minAmount};
+     S.promoBad=false;S.promoMsg='';S.form['f-promo']='';rerender();
+     toast(T(r.label_ko+' 코드를 적용했습니다.',r.label_en+' code applied.'),3000);});return;}
+ if(a==='promoclear'){S.promo=null;S.promoMsg='';S.promoBad=false;S.form['f-promo']='';rerender();return;}
+ if(a==='inq'){var b=block();S.inquiryReason=b?b.msg:'';delete S.form['i-where'];delete S.form['i-msg'];go('inquiry');return;}
+ if(a==='sendinq'){var u0=S.user||{};
+   if(!val('i-msg')&&!val('i-where')){toast(T('남길 말을 적어 주세요.','Please write a message.'));return;}
+   call('apiInquiry',{reason:S.inquiryReason,area:val('i-where'),message:val('i-msg'),name:u0.name,group:u0.group,phone:u0.phone,lang:S.lang,test:BOOT.test},T('보내는 중…','Sending…')).then(function(r){
+     if(r&&r.ok){home('where');toast(T('문의를 보냈습니다. 사장님이 직접 연락드립니다.','Inquiry sent. The owner will contact you.'),4000);}});return;}
+ if(a==='place'){if(!S.addrSel)return;var u=S.user||{},sp=SPOTS.filter(function(x){return x[0]===S.spot;})[0];
+   if(S.receipt==='biz'&&(S.form['f-bizno']||'').replace(/\D/g,'').length<10){toast(T('사업자등록번호 10자리를 넣어 주세요.','Please enter the 10-digit business number.'));return;}
+   var sel=S.addrSel,req={cityId:S.city,date:S.date,slot:S.slot,time:S.time,items:S.qty,name:u.name,group:u.group,phone:u.phone,mkt:u.mkt,consent:!!u.consent,
+     addrRoad:sel.road+(sel.bld?' ('+sel.bld+')':''),addrJibun:sel.jibun,zip:sel.zip,addrDetail:(S.form['f-addr2']||'').trim(),spot:sp?sp[1]:'',request:(S.form['f-req']||'').trim(),
+     receiptType:S.receipt,receiptNo:(S.form['f-bizno']||'').trim(),lang:S.lang,test:BOOT.test,
+     code:S.promo?S.promo.code:'',sess:S.sess,points:calc(S.qty,S.city).pts};
+   if(S.form['c-save']!==false)lsSet('addr',{sel:sel,detail:req.addrDetail,spot:S.spot});else lsSet('addr',null);
+   call('apiPlaceOrder',req,T('주문을 보내는 중…','Sending your order…')).then(function(r){
+     if(!r)return;if(!r.ok){handleOrderErr(r.err);return;}
+     var list=lsGet('orders',[]);list.unshift({id:r.order.id,token:r.token});lsSet('orders',list);
+     S.mine=r.order;S.myOrders.unshift(r.order);S.promo=null;S.promoMsg='';S.promoBad=false;S.form['f-promo']='';S.qraw={};
+     S.ptUse=0;S.ptRaw=null;if(r.points)S.points=r.points;
+     home('status');toast(T('주문을 보냈습니다. 사장님께 알림이 갔습니다.','Request sent. The owner has been notified.'),4000);
+     api('apiBoot').then(applyBoot);});return;}
+ if(a==='refresh'){call('apiMyOrders',mineArg(),T('확인하는 중…','Checking…')).then(function(r){if(r&&r.ok){applyBoot(r.boot);S.myOrders=r.orders;var m=r.orders.filter(function(o){return o.id===S.mine.id;})[0];if(m)S.mine=m;rerender();toast(T('최신 상태입니다.','Up to date.'));}});return;}
+ if(a==='copy'){var v=el.dataset.v;try{navigator.clipboard.writeText(v).then(function(){toast(T('계좌번호를 복사했습니다.','Account number copied.'));},function(){toast(v,5000);});}catch(x){toast(v,5000);}return;}
+ if(a==='my'){go('my');loadMine(false);return;}
+ if(a==='myopen'){S.mine=S.myOrders.filter(function(o){return o.id===el.dataset.id;})[0];S.form['rv-text']='';go('status');return;}
+ if(a==='star'){S.rvStars[S.mine.id]=+el.dataset.v;rerender();return;}
+ if(a==='review'){var ro=S.mine,ns=S.rvStars[ro.id]||0,tx=(S.form['rv-text']||'').trim(),mc=CFG.reviewMinChars||10;
+   if(!ns){toast(T('별점을 골라 주세요.','Please choose a star rating.'));return;}
+   if(tx.length<mc){toast(T('후기를 '+mc+'자 이상 적어 주세요.','Please write at least '+mc+' characters.'));return;}
+   var ra=mineArg();ra.orderId=ro.id;ra.stars=ns;ra.text=tx;ra.lang=S.lang;
+   call('apiReview',ra,T('후기를 올리는 중…','Posting your review…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);return;}
+     S.mine=r.order;S.myOrders=S.myOrders.map(function(x){return x.id===r.order.id?r.order:x;});if(r.points)S.points=r.points;S.form['rv-text']='';rerender();
+     toast(r.pointsEarned?T('후기 감사합니다! '+ptWon(r.pointsEarned)+' 적립됐습니다.','Thank you! '+ptWon(r.pointsEarned)+' added.'):T('후기 감사합니다!','Thank you for your review!'),4500);});return;}
+ if(a==='ptsall'){var kk=calc(S.qty,S.city);S.ptUse=Math.min(S.points?S.points.balance:0,kk.pmax);S.ptRaw=null;rerender();return;}
+ if(a==='neworder'||a==='reorder'){S.qraw={};S.ptUse=0;S.ptRaw=null;S.promo=null;S.promoMsg='';S.promoBad=false;S.form['f-promo']='';
+   if(a==='reorder'&&S.mine){S.qty=emptyQty();S.mine.items.forEach(function(l){if(l.id in S.qty)S.qty[l.id]=l.qty;});S.city=S.mine.cityId;}else{S.qty=emptyQty();}
+   S.date=null;S.mine=null;home('where');return;}
+ if(a==='deltry'){S.delConfirm=true;rerender();return;}
+ if(a==='delcancel'){S.delConfirm=false;rerender();return;}
+ if(a==='delacct'){call('apiDeleteMine',mineArg(),T('지우는 중…','Deleting…')).then(function(){['profile','orders','addr','sess'].forEach(function(k){lsSet(k,null);});var l2=S.lang;fresh();S.lang=l2;render();toast(T('계정을 삭제했습니다.','Account deleted.'));});return;}
+ if(a==='ofilter'){S.ofilter=el.dataset.f;rerender();return;}
+ if(a==='rvhide'){call('apiOwnerHideReview',{key:KEY,id:el.dataset.id,hide:el.dataset.h==='1'},T('저장하는 중…','Saving…')).then(function(r){
+   if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),4000);return;}
+   S.reviews=S.reviews.map(function(x){return x.id===r.review.id?r.review:x;});rerender();
+   toast(r.review.hidden?T('숨겼습니다. 홈페이지에서 빠집니다(포인트는 그대로).','Hidden from the website (points unchanged).'):T('다시 보이게 했습니다.','Visible again.'));});return;}
+ if(a==='oday'){S.oday=el.dataset.d||null;rerender();return;}
+ if(a==='omonth'){var mm=calMonth(),d2=new Date(mm.y,mm.m-1+(+el.dataset.v),1);S.omonth=monthKey(d2);rerender();return;}
+ if(a==='odetail'){S.oid=el.dataset.id;go('o_detail');return;}
+ if(a==='reload'){S.orders=null;rerender();loadStaff();return;}
+ if(a==='sday'){S.sday=el.dataset.d||null;rerender();return;}
+ if(a==='set'){var oid=el.dataset.id||S.oid,to2=el.dataset.to;
+   call('apiSetStatus',{key:KEY,id:oid,to:to2},T('저장하는 중…','Saving…')).then(function(r){
+     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);}
+     if(r.order){S.orders=S.orders.map(function(x){return x.id===r.order.id?r.order:x;});}
+     var sm={sent:T(' 손님께 문자를 보냈습니다.',' The customer was texted.'),dry:T(' (시험 모드 — 손님 문자는 안 나감)',' (Test mode — no text sent)'),fail:T(' ⚠️ 손님 문자가 실패했습니다 — 직접 연락해 주세요.',' ⚠️ The text failed — please contact the customer.')}[r.sms]||'';
+     if(r.ok)toast({accepted:T('수락했습니다. 손님 주문 화면에 입금 계좌가 떴습니다.','Approved. Bank details now show on the customer\'s page.')+sm,
+       rejected:T('거절했습니다. 손님 주문 화면에 사과 안내가 떴습니다.','Declined. The customer\'s page shows an apology.')+sm,
+       paid:T('확정했습니다. 직원 화면에 올라갔습니다.','Confirmed. It now shows on the staff screen.')+sm,
+       out:T('출발로 표시했습니다.','Marked as on the way.')+sm,delivered:T('배달 완료로 표시했습니다.','Marked as delivered.')}[to2],4000);
+     rerender();});return;}
+});
+document.addEventListener('change',function(e){
+ var t=e.target;
+ if(t.dataset&&t.dataset.qty){delete S.qraw[t.dataset.qty];rerender();return;}
+ if(t.dataset&&t.dataset.pts){S.ptRaw=null;rerender();return;}
+ if(t.dataset&&t.dataset.change==='city'){S.city=t.value;rerender();return;}
+ if(t.type==='checkbox'&&t.id){S.form[t.id]=t.checked;return;}
+ if(t.name==='rc'){S.receipt=t.value;rerender();}
+});
+document.addEventListener('input',function(e){
+ var t=e.target;if(!t.id||t.type==='checkbox'||t.type==='radio'||t.tagName==='SELECT')return;
+ // 개수 직접 넣기 — 친 글자는 그대로 두고(지우는 중일 수 있다) 숫자만 뽑아 수량에 넣는다
+ if(t.dataset&&t.dataset.qty){var id=t.dataset.qty,n=parseInt(String(t.value).replace(/[^0-9]/g,''),10);
+   S.qraw[id]=t.value;S.qty[id]=isNaN(n)?0:Math.max(0,Math.min(2000,n));rerender();return;}
+ if(t.dataset&&t.dataset.pts){var pn=parseInt(String(t.value).replace(/[^0-9]/g,''),10);S.ptRaw=t.value;S.ptUse=isNaN(pn)?0:pn;rerender();return;}
+ S.form[t.id]=t.value;
+});
+setInterval(function(){var el=document.getElementById('otp-timer');if(!el||!S)return;var r=Math.max(0,300-Math.floor((Date.now()-S.codeAt)/1000));
+ el.textContent=r>0?T('남은 시간 ','Time left ')+Math.floor(r/60)+':'+('0'+r%60).slice(-2):T('시간이 지났습니다. 다시 받아 주세요.','Code expired. Please resend.');},1000);
+
+/* ── 시작 — BOOT 가 준비된 뒤에 돈다 ── */
+function startApp(){
+ ROLE=BOOT.role||'customer';KEY=BOOT.key||'';
+ applyBoot(BOOT);
+ fresh();
+ /* 소셜 로그인에서 돌아옴 — 번호가 없으면 번호 인증부터 */
+ var AU=BOOT.auth;
+ if(ROLE==='customer'&&AU){
+  if(AU.sess){S.sess=AU.sess;lsSet('sess',AU.sess);
+    if(AU.user.needPhone){S.social=AU.provider;S.form['f-name']=AU.user.name||'';S.screen='signup';S.hist=['start'];}
+    else setLogin(AU.sess,AU.user);}
+  else if(AU.err!=='state')setTimeout(function(){toast(AU.err==='cancel'?T('로그인을 취소하셨습니다.','Sign-in was cancelled.'):T('로그인하지 못했습니다. 잠시 뒤 다시 해 주세요.','Sign-in failed. Please try again.'),4500);},300);
+ }
+ /* 이 기기의 로그인 표가 아직 살아 있나(지웠거나 기한이 지났으면 가입 정보를 비운다) */
+ if(ROLE==='customer'&&S.sess&&!(AU&&AU.sess)){api('apiMe',S.sess).then(function(r){if(r&&!r.ok){S.sess=null;lsSet('sess',null);S.user=null;rerender();}else if(r&&r.ok&&!r.user.needPhone){setLogin(S.sess,r.user);rerender();}});}
+ /* 첫 화면 — 4.8 부터 홈(메뉴 사진·주문하기·내 주문·로그인/로그아웃)에서 시작. 진행 중 주문이 있으면 loadMine 이 상태 화면으로 데려간다 */
+ if(S.screen==='signup'){}
+ else if(BOOT.badKey){S.screen='badkey';}
+ else if(ROLE!=='customer'){S.screen=HOME[ROLE];loadStaff();}
+ else loadMine(true);
+ render();
+}
+function bootFail(){document.getElementById('screen').innerHTML='<p style="padding:20px">'+(S&&S.lang==='en'?'Could not load settings — please refresh.':'설정을 불러오지 못했습니다. 새로고침해 주세요.')+'</p>';}
+if(typeof BOOT!=='string')startApp();
+else if(!EXEC)bootFail();
+else{
+ /* 정적 판(gnukebab.co.kr/order) — 설정을 창구에서 받아 온다. 소셜 로그인에서 ?state&code 로 돌아왔으면 마무리도 서버에 부탁한다 */
+ var pAuth=(Q.state&&(Q.code||Q.error!=null))?api('oauth_finish',{state:Q.state,code:Q.code,error:Q.error}).catch(function(){return {err:'net'};}):Promise.resolve(null);
+ Promise.all([fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();}),pAuth])
+ .then(function(rr){
+   BOOT=rr[0];if(rr[1])BOOT.auth=rr[1];
+   if(Q.state)try{history.replaceState(null,'',location.pathname+(Q.t==='1'?'?t=1':''));}catch(x){}
+   startApp();
+ },bootFail);
+}
+})();
+</script>
+</body>
+</html>
