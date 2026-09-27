@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>경대케밥 단체주문</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -413,7 +413,7 @@ SCR.start=function(){
    var nm=g.length===1?iname(ms[0]):T(g[1],g[2]),img=g.length===1?g[0]:g[5];
    var pr=!ps.length?T('가격 미정','Price TBD'):lo===hi?won(lo):won(lo)+' ~ '+won(hi);
    var sub=g.length===1?T(ms[0].desc_ko||'',ms[0].desc_en||''):T(g[3],g[4]);
-   return '<div class="mcard"><img src="'+IMGB+img+'.jpg?v=864df70e" alt="'+esc(nm)+'" loading="lazy" onerror="this.style.display=\'none\'">'+
+   return '<div class="mcard"><img src="'+IMGB+img+'.jpg?v=8348e8a0" alt="'+esc(nm)+'" loading="lazy" onerror="this.style.display=\'none\'">'+
     '<div class="mtxt"><b>'+esc(nm)+'</b><span>'+pr+EX()+'</span>'+(sub?'<span class="msub">'+esc(sub)+'</span>':'')+'</div></div>';}).join('');
  return {bar:false,body:HOMEBODY(logged,cards)};};
 function authBox(forOrder){
@@ -477,7 +477,7 @@ SCR.signup=function(){
  otpBlock()+(S.social?'':idpwFields(true))+
  '<div class="card"><label class="check"><input type="checkbox" id="c-req"'+(F['c-req']?' checked':'')+'><span><b>'+T('[필수]','[Required]')+'</b> '+T('개인정보 수집·이용 동의 — 이름·단체 이름·휴대폰 번호를 주문 처리와 배달 연락에만 씁니다.','Consent to collect your name, organization and phone number for order handling and delivery only.')+'</span></label>'+
  '<label class="check"><input type="checkbox" id="c-mkt"'+(F['c-mkt']?' checked':'')+'><span><b>'+T('[선택]','[Optional]')+'</b> '+T('할인·재주문 안내 받기 (카카오톡 채널)','Get discounts and reorder reminders (KakaoTalk channel)')+'</span></label>'+
- '<button type="button" class="link small" data-act="toast" data-m="'+esc(T('개인정보 처리방침 전문은 공개 전에 붙입니다.','The full privacy policy will be added before launch.'))+'" style="align-self:flex-start;padding:0">'+T('개인정보 처리방침 보기','View privacy policy')+'</button></div>',
+ '<a class="link small" href="'+T('https://gnukebab.co.kr/privacy.html','https://gnukebab.co.kr/en/privacy.html')+'" target="_blank" rel="noopener" style="align-self:flex-start;padding:0">'+T('개인정보 처리방침 보기','View privacy policy')+'</a></div>',
  foot:'<button type="button" class="btn primary" data-act="signup"'+(S.verified?'':' disabled')+'>'+(S.verified?T('가입하고 주문하기','Sign up and order'):T('휴대폰 인증 후 가입할 수 있어요','Verify your phone to continue'))+'</button>'};};
 
 SCR.where=function(){
@@ -527,7 +527,7 @@ SCR.menu=function(){
  var c=city(S.city),k=calc(S.qty,S.city),bl=block(),a=avail(S.date),left=a?a.left:0,rem=Math.max(0,c.minAmount-k.goods);
  /* 09-27(8) 사장님: 사진 크게(한 화면 4개여도 됨) + 메뉴 이름 밑 한 줄 설명 */
  var rows=MENU.map(function(m){var q=S.qty[m.id]||0,note=T(m.note_ko,m.note_en),ds=T(m.desc_ko,m.desc_en);
-   return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg?v=864df70e" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div class="itx"><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+(ds?'<div class="ds">'+esc(ds)+'</div>':'')+
+   return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg?v=8348e8a0" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div class="itx"><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+(ds?'<div class="ds">'+esc(ds)+'</div>':'')+
    '<div class="step"><button type="button" data-act="q" data-id="'+m.id+'" data-d="-1" aria-label="'+T('하나 빼기','Remove one')+'">−</button>'+
    '<input class="q qin" type="text" inputmode="numeric" data-qty="'+m.id+'" id="q-'+m.id+'" value="'+esc(S.qraw[m.id]!=null?S.qraw[m.id]:q)+'" aria-label="'+T(esc(L(m))+' 개수 직접 넣기',esc(L(m))+' quantity')+'">'+
    '<button type="button" data-act="q" data-id="'+m.id+'" data-d="1" aria-label="'+T('하나 더','Add one')+'">+</button><button type="button" data-act="q" data-id="'+m.id+'" data-d="10">+10</button>'+(m.food?'<span class="left'+(rem?'':' ok')+'">'+(rem?T('최소까지 약 '+Math.ceil(rem/(m.price*(1-CFG.discountRate)))+'개',Math.ceil(rem/(m.price*(1-CFG.discountRate)))+' more to min.'):T('✓ 최소 채움','✓ minimum met'))+'</span>':'')+'</div></div></div>';}).join('');
