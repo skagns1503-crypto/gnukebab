@@ -413,7 +413,7 @@ SCR.start=function(){
    var nm=g.length===1?iname(ms[0]):T(g[1],g[2]),img=g.length===1?g[0]:g[5];
    var pr=!ps.length?T('가격 미정','Price TBD'):lo===hi?won(lo):won(lo)+' ~ '+won(hi);
    var sub=g.length===1?T(ms[0].desc_ko||'',ms[0].desc_en||''):T(g[3],g[4]);
-   return '<div class="mcard"><img src="'+IMGB+img+'.jpg" alt="'+esc(nm)+'" loading="lazy" onerror="this.style.display=\'none\'">'+
+   return '<div class="mcard"><img src="'+IMGB+img+'.jpg?v=864df70e" alt="'+esc(nm)+'" loading="lazy" onerror="this.style.display=\'none\'">'+
     '<div class="mtxt"><b>'+esc(nm)+'</b><span>'+pr+EX()+'</span>'+(sub?'<span class="msub">'+esc(sub)+'</span>':'')+'</div></div>';}).join('');
  return {bar:false,body:HOMEBODY(logged,cards)};};
 function authBox(forOrder){
@@ -527,7 +527,7 @@ SCR.menu=function(){
  var c=city(S.city),k=calc(S.qty,S.city),bl=block(),a=avail(S.date),left=a?a.left:0,rem=Math.max(0,c.minAmount-k.goods);
  /* 09-27(8) 사장님: 사진 크게(한 화면 4개여도 됨) + 메뉴 이름 밑 한 줄 설명 */
  var rows=MENU.map(function(m){var q=S.qty[m.id]||0,note=T(m.note_ko,m.note_en),ds=T(m.desc_ko,m.desc_en);
-   return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div class="itx"><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+(ds?'<div class="ds">'+esc(ds)+'</div>':'')+
+   return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg?v=864df70e" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div class="itx"><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+(ds?'<div class="ds">'+esc(ds)+'</div>':'')+
    '<div class="step"><button type="button" data-act="q" data-id="'+m.id+'" data-d="-1" aria-label="'+T('하나 빼기','Remove one')+'">−</button>'+
    '<input class="q qin" type="text" inputmode="numeric" data-qty="'+m.id+'" id="q-'+m.id+'" value="'+esc(S.qraw[m.id]!=null?S.qraw[m.id]:q)+'" aria-label="'+T(esc(L(m))+' 개수 직접 넣기',esc(L(m))+' quantity')+'">'+
    '<button type="button" data-act="q" data-id="'+m.id+'" data-d="1" aria-label="'+T('하나 더','Add one')+'">+</button><button type="button" data-act="q" data-id="'+m.id+'" data-d="10">+10</button>'+(m.food?'<span class="left'+(rem?'':' ok')+'">'+(rem?T('최소까지 약 '+Math.ceil(rem/(m.price*(1-CFG.discountRate)))+'개',Math.ceil(rem/(m.price*(1-CFG.discountRate)))+' more to min.'):T('✓ 최소 채움','✓ minimum met'))+'</span>':'')+'</div></div></div>';}).join('');
