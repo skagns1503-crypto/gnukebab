@@ -394,11 +394,7 @@ SCR.start=function(){
    var note=T(m.note_ko||'',m.note_en||'');
    return '<div class="mcard"><img src="'+IMGB+m.id+'.jpg" alt="'+esc(iname(m))+'" loading="lazy" onerror="this.style.display=\'none\'">'+
     '<div class="mtxt"><b>'+esc(iname(m))+'</b><span>'+(m.price?won(m.price):T('가격 미정','Price TBD'))+(note?' '+esc(note):'')+EX()+'</span></div></div>';}).join('');
- var auth;
- if(logged)auth='<div class="auth"><p class="hellome">'+esc(S.user.name)+T('님으로 로그인돼 있습니다.',', you are signed in.')+'</p>'+
-  '<button type="button" class="link" data-act="logout">'+T('로그아웃','Sign out')+'</button></div>';
- else auth=authBox(false);
- return {bar:false,body:HOMEBODY(logged,cards)+auth};};
+ return {bar:false,body:HOMEBODY(logged,cards)};};
 function authBox(forOrder){
  return '<div class="auth">'+
   '<button type="button" class="btn" data-act="go" data-to="signup">'+T('휴대폰 번호로 가입 · 로그인','Sign up / log in with phone number')+'</button>'+
@@ -415,6 +411,9 @@ function HOMEBODY(logged,cards){
  '<div class="auth" style="margin-top:2px">'+
  '<button type="button" class="btn primary" data-act="go" data-to="'+(logged||S.sess?'where':'login')+'">'+T('주문하기','Start an order')+'</button>'+
  ((logged||tokens().length)?'<button type="button" class="btn" data-act="my">'+T('내 주문','My orders')+'</button>':'')+
+ /* 09-27 사장님 「로그인 칸이 안 보인다」 — 메뉴 사진 아래 맨 밑에 있던 것을 주문하기 바로 밑으로 */
+ (logged?'<p class="hellome">'+esc(S.user.name)+T('님으로 로그인돼 있습니다.',', you are signed in.')+' <button type="button" class="link" data-act="logout">'+T('로그아웃','Sign out')+'</button></p>'
+  :'<button type="button" class="btn" data-act="go" data-to="login">'+T('로그인 · 회원가입','Sign in / Sign up')+'</button>')+
  '</div>'+
  '<div class="lbl" style="margin:8px 0 -4px">'+T('단체 메뉴','Group menu')+'</div><div class="mgrid">'+cards+'</div>';}
 /* 09-27 사장님: 주문은 로그인·가입 먼저 */
