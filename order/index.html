@@ -444,7 +444,7 @@ SCR.login=function(){var F=S.form;return {title:T('로그인','Sign in'),back:tr
  '<div class="field"><label for="f-lpw">'+T('비밀번호','Password')+'</label><input class="input" id="f-lpw" type="password" autocomplete="current-password" value=""></div>'+
  '<div class="auth"><button type="button" class="btn primary" data-act="loginpw">'+T('로그인','Sign in')+'</button>'+
  '<button type="button" class="btn" data-act="go" data-to="signup">'+T('회원가입','Sign up')+'</button>'+
- '<button type="button" class="link small" data-act="go" data-to="findpw" style="align-self:center">'+T('아이디·비밀번호 찾기 (휴대폰 인증)','Find ID / reset password (phone)')+'</button></div>'+
+ '<button type="button" class="link small" data-act="go" data-to="findpw" style="align-self:center">'+T('아이디·비밀번호 찾기 (아이디로 가입하신 분)','Find ID / reset password (ID members)')+'</button></div>'+
  '<p class="muted small" style="margin:6px 0 0">'+T('또는 쓰시던 계정으로 — 같은 휴대폰 번호면 한 회원으로 묶입니다.','Or use an account you have — the same phone number keeps you as one member.')+'</p>'+authBox(true)};};
 function otpBlock(){var F=S.form,ph=F['f-phone']||'010-',otp='';
  if(S.verified)otp='<div class="note ok small">✓ '+T('휴대폰 인증이 끝났습니다.','Phone number verified.')+'</div>';
@@ -812,6 +812,8 @@ document.addEventListener('focusin',function(e){
 });
 function go(to){S.hist.push(S.screen);S.screen=to;render();}
 function home(to){S.hist=[];S.screen=to;render();}
+/* 09-27(9) 사장님 「돌려보내라」 — 다른 길로 가입한 번호면 창으로 그 길을 알리고 로그인 화면으로(소셜로 막 들어온 표는 버린다) */
+function sendBack(e,out){if(out){S.sess=null;lsSet('sess',null);S.user=null;lsSet('profile',null);}S.social='';S.verified=false;S.codeSent=false;S.vt='';clearPw();home('start');notice(T(e.ko,e.en));}
 function notice(m){var d=document.getElementById('modal'),b=document.getElementById('modal-ok');document.getElementById('modal-msg').textContent=m;b.textContent=T('확인','OK');d.hidden=false;b.onclick=function(){d.hidden=true;};setTimeout(function(){b.focus();},50);}
 var tt;function toast(m,ms){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(hideToast,ms||2600);}
 function hideToast(){document.getElementById('toast').classList.remove('on');}
@@ -861,18 +863,14 @@ document.addEventListener('click',function(e){
  if(a==='verify'){if(Date.now()-S.codeAt>300000){toast(T('시간이 지났습니다. 다시 받아 주세요.','Code expired. Please resend.'));return;}
    var cd=String(S.form['f-code']||'').replace(/\D/g,'');if(cd.length!==6){toast(T('인증번호 6자리를 넣어 주세요.','Enter the 6-digit code.'));return;}
    call('apiVerifyCode',{phone:S.form['f-phone'],code:cd,sess:S.sess},T('확인하는 중…','Checking…')).then(function(r){
-     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),4000);return;}
+     if(!r)return;if(!r.ok){if(r.err.code==='member_exists'){sendBack(r.err,r.signOut);return;}toast(T(r.err.ko,r.err.en),4000);return;}
      S.vt=r.vt;S.verified=true;
      /* 09-27 이미 회원인 번호 → 가입 화면 없이 바로 로그인(소셜로 막 들어온 경우 그 회원에 묶임) */
      if(S.screen==='findpw'){S.known=r.known;if(r.sess)setLogin(r.sess,r.user);if(!r.known)toast(T('가입된 번호가 아닙니다. 회원가입을 해 주세요.','No member with this number. Please sign up.'),5000);rerender();return;}
-     /* 09-27 사장님: 네이버로 가입해 놓고 깜빡 카카오로 가입하려 하면 「이미 가입된 회원」이라고 알려 주고 그 회원으로 */
-     if(r.sess){var how={google:'구글',kakao:'카카오',naver:'네이버',phone:'휴대폰 번호'}[r.user.provider]||'';
-       var howEn={google:'Google',kakao:'Kakao',naver:'Naver',phone:'your phone number'}[r.user.provider]||'';
-       var was=S.social;
-       setLogin(r.sess,r.user);S.social='';S.verified=false;S.codeSent=false;clearPw();home('where');
-       /* 09-27(8) 사장님 「안내는 해 줘야지」 — 토스트는 못 보고 지나가서 「확인」 창으로 */
-       notice(T('이 번호는 이미 '+how+'로 가입된 회원입니다'+(r.user.loginId?'(아이디 '+r.user.loginId+')':'')+'.\n새로 가입하지 않고 그 회원으로 로그인했습니다.'+(was&&was!==r.user.provider?'\n다음부터는 '+{google:'구글',kakao:'카카오',naver:'네이버'}[was]+'로 들어오셔도 같은 회원입니다.':''),
-         'This number already has an account (joined with '+howEn+(r.user.loginId?', ID '+r.user.loginId:'')+').\nWe signed you in to it instead of creating a new one.'));loadMine(true);return;}
+     /* 09-27(9) 휴대폰으로 가입한 번호 = 가입 화면 없이 그 회원으로 로그인(소셜 가입 번호는 서버가 member_exists 로 돌려보냄) */
+     if(r.sess){setLogin(r.sess,r.user);S.social='';S.verified=false;S.codeSent=false;clearPw();home('where');
+       notice(T('이미 가입된 번호입니다'+(r.user.loginId?'(아이디 '+r.user.loginId+')':'')+'.\n새로 가입하지 않고 그 회원으로 로그인했습니다.',
+         'This number already has an account'+(r.user.loginId?' (ID '+r.user.loginId+')':'')+'.\nWe signed you in to it.'));loadMine(true);return;}
      if(r.known){if(!(S.form['f-name']||'').trim())S.form['f-name']=r.known.name;if(!(S.form['f-group']||'').trim())S.form['f-group']=r.known.group;if(r.known.mkt)S.form['c-mkt']=true;S.form['c-req']=true;}
      rerender();toast(r.known?T('인증됐습니다. 전에 가입하신 정보를 불러왔습니다.','Verified. We loaded your saved details.'):T('인증됐습니다.','Verified.'));});return;}
  if(a==='signup'){if(!S.verified)return;if(!(S.form['f-name']||'').trim()){toast(T('이름을 넣어 주세요.','Please enter your name.'));return;}
@@ -880,7 +878,7 @@ document.addEventListener('click',function(e){
    if(!S.form['c-req']){toast(T('[필수] 개인정보 동의에 체크해 주세요.','Please accept the required consent.'));return;}
    call('apiSignup',{vt:S.vt,sess:S.sess,name:S.form['f-name'].trim(),group:(S.form['f-group']||'').trim(),mkt:!!S.form['c-mkt'],consent:true,
      loginId:S.social?'':(S.form['f-id']||'').trim().toLowerCase(),pw:S.social?'':S.form['f-pw']},T('가입하는 중…','Signing up…')).then(function(r){
-     if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);if(r.err.code==='verify'){S.verified=false;S.codeSent=false;S.vt='';rerender();}return;}
+     if(!r)return;if(!r.ok){if(r.err.code==='member_exists'){sendBack(r.err,r.signOut);return;}toast(T(r.err.ko,r.err.en),5000);if(r.err.code==='verify'){S.verified=false;S.codeSent=false;S.vt='';rerender();}return;}
      setLogin(r.sess,r.user);S.social='';S.verified=false;S.codeSent=false;clearPw();home('where');toast(T('가입했습니다.','Signed up.'));loadMine(true);});return;}
  if(a==='loginpw'){var lid=(S.form['f-lid']||'').trim(),lpw=val('f-lpw');if(!lid||!lpw){toast(T('아이디와 비밀번호를 넣어 주세요.','Enter your ID and password.'));return;}
    call('apiLoginPw',{id:lid,pw:lpw},T('로그인하는 중…','Signing in…')).then(function(r){
@@ -996,7 +994,8 @@ function startApp(){
  if(ROLE==='customer'&&AU){
   if(AU.sess){S.sess=AU.sess;lsSet('sess',AU.sess);
     if(AU.user.needPhone){S.social=AU.provider;S.form['f-name']=AU.user.name||'';S.screen='signup';S.hist=['start'];}
-    else{setLogin(AU.sess,AU.user);if(AU.linked)setTimeout(function(){var PK={google:'구글',kakao:'카카오',naver:'네이버',phone:'휴대폰 번호'},PE={google:'Google',kakao:'Kakao',naver:'Naver',phone:'phone number'};notice(T('이미 '+(PK[AU.user.provider]||'')+'로 가입된 회원입니다'+(AU.user.loginId?'(아이디 '+AU.user.loginId+')':'')+'.\n'+(PK[AU.provider]||'')+'로 들어오셔도 새로 가입되지 않고 같은 회원으로 로그인됩니다.','You already have an account (joined with '+(PE[AU.user.provider]||'')+').\nSigning in with '+(PE[AU.provider]||'')+' takes you to the same account.'));},300);var gw=null;try{gw=sessionStorage.getItem('go');sessionStorage.removeItem('go');}catch(e){}if(gw==='where'){S.screen='where';S.hist=['start'];}}}
+    else{setLogin(AU.sess,AU.user);var gw=null;try{gw=sessionStorage.getItem('go');sessionStorage.removeItem('go');}catch(e){}if(gw==='where'){S.screen='where';S.hist=['start'];}}}
+  else if(AU.err==='member_exists')setTimeout(function(){notice(T(AU.msg.ko,AU.msg.en));},300);
   else if(AU.err!=='state')setTimeout(function(){toast(AU.err==='cancel'?T('로그인을 취소하셨습니다.','Sign-in was cancelled.'):T('로그인하지 못했습니다. 잠시 뒤 다시 해 주세요.','Sign-in failed. Please try again.'),4500);},300);
  }
  /* 이 기기의 로그인 표가 아직 살아 있나(지웠거나 기한이 지났으면 가입 정보를 비운다) */
