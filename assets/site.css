@@ -1,6 +1,6 @@
 
 @font-face{font-family:"Pretendard";src:url(fonts/PretendardVariable.woff2) format("woff2");font-weight:100 900;font-display:swap}
-:root{--red:#DA291C;--ink:#2B2B2B;--sub:#6b625c;--line:#e6ddd2;--bg:#F4EBDD;--card:#fff}
+:root{--red:#DA291C;--pine:#0f5a46;--ink:#2B2B2B;--sub:#6b625c;--line:#e6ddd2;--bg:#F4EBDD;--card:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard",-apple-system,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;font-size:17px;line-height:1.7;word-break:keep-all}
 a{color:inherit}
@@ -38,7 +38,23 @@ table.board .tag.blog{color:#03a94d;border-color:#03a94d}
 .rv-pics{display:flex;gap:6px;margin-top:12px}.rv-pics img{width:104px;height:104px;object-fit:cover;border-radius:8px;display:block}
 .chs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
 .ch{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:10px}
-.ch b{font-size:15px}.ch .btn{padding:7px 14px;font-size:14px;margin:0}
+.ch b{font-size:15px}.ch .btn{padding:7px 14px;font-size:14px;margin:0;border:0;color:#fff}
+.ch .mark{display:flex;align-items:center;gap:7px;height:32px}.ch .mark svg{height:28px;width:auto;display:block}
+.ch-naver_blog .mark span{font-family:Pretendard,sans-serif;font-weight:900;font-size:24px;color:#03C75A;letter-spacing:-.04em}
+.ch-instagram .mark span{font-family:'Grand Hotel',cursive;font-size:27px;color:#262626;line-height:1}
+.ch-youtube .mark span{font-family:Roboto,Arial,sans-serif;font-weight:700;font-size:21px;color:#0f0f0f;letter-spacing:-.06em}
+.ch-naver_blog .btn{background:#03C75A}.ch-youtube .btn{background:#FF0000}
+.ch-instagram .btn{background:linear-gradient(45deg,#FEDA75,#FA7E1E 25%,#D62976 50%,#962FBF 75%,#4F5BD5)}
+.mapline .btn{display:inline-flex;align-items:center;gap:6px}.mapline .btn svg{width:18px;height:18px;display:block}
+.mapline .map-naver_map{background:#03C75A;border-color:#03C75A;color:#fff}
+.mapline .map-google_map{background:#fff;border:1.5px solid #dadce0;color:#3c4043;font-family:Roboto,Arial,sans-serif}.map-google_map i{font-style:normal;font-weight:700}
+nav a.grp{background:var(--pine);color:#fff;font-weight:800}nav a.grp.on{background:#0a3f31}
+.dock{position:fixed;z-index:20;display:flex;gap:10px}
+.dock .btn{text-align:center;font-weight:800;margin:0}.dock .btn.go{background:var(--pine);border-color:var(--pine);color:#fff}
+.dock .btn.alt{border-color:var(--pine);color:var(--pine);background:#fff}
+@media (min-width:1400px){.dock{top:110px;left:calc(50% + 500px);width:230px;flex-direction:column}.dock .btn{font-size:20px;padding:20px 12px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.08)}.dock .btn.go{font-size:23px;padding:26px 12px}}
+@media (max-width:1399px){.dock{left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.06)}.dock .btn{flex:1;font-size:17px;padding:15px 6px;border-radius:10px}.dock .btn.go{flex:1.3;font-size:19px}.dock-space{height:96px}}
+@media (max-width:640px){.dock{gap:6px;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}.dock .btn{font-size:14px;padding:14px 4px}.dock .btn.go{font-size:16px}}
 img.qr{width:92px;height:92px;display:block;background:#fff}
 .mapline{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px}.mapline span{font-weight:700;margin-right:4px}.mapline .btn{padding:7px 14px;font-size:14px;margin:0}
 .sign{font-weight:800;margin-top:24px}
