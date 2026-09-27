@@ -1007,7 +1007,15 @@ function startApp(){
  else loadMine(true);
  render();
 }
-function bootFail(){document.getElementById('screen').innerHTML='<p style="padding:20px">'+(S&&S.lang==='en'?'Could not load settings — please refresh.':'설정을 불러오지 못했습니다. 새로고침해 주세요.')+'</p>';}
+/* 09-27(10) 사장님 「계속 떠 있다」「설정을 불러오지 못했습니다」 — 서버 기록은 전부 완료인데 폰에서 못 받음 → 다시 시도 단추 + 원인 한 줄(다시 시도는 ?code 없이 — 소셜 code 는 한 번만 쓸 수 있다) */
+function bootFail(e){var en=/^en/i.test(navigator.language||''),why=e&&e.message?String(e.message).slice(0,80).replace(/</g,'&lt;'):'';
+ document.getElementById('screen').innerHTML='<div style="padding:56px 20px;text-align:center"><p style="margin-bottom:16px">'+(en?'Could not load. Please check your connection and try again.':'불러오지 못했습니다. 인터넷 연결을 확인하시고 다시 시도해 주세요.')+'</p>'+
+  '<button type="button" class="btn primary" onclick="location.href=location.pathname+(Q.t===\'1\'?\'?t=1\':\'\')">'+(en?'Try again':'다시 시도')+'</button>'+(why?'<p class="muted small" style="margin-top:14px">('+why+')</p>':'')+'</div>';}
+/* 설정 받기 — 30초 넘거나 실패하면 두 번 더(1.5초 쉬고). 창구 첫 응답이 6~17초라 한 번 끊겨도 다시 받으면 된다 */
+function bootGet(n){var ctl=window.AbortController?new AbortController():null,tm=ctl?setTimeout(function(){ctl.abort();},30000):0;
+ return fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')+(Q.r?'&r='+encodeURIComponent(Q.r)+'&k='+encodeURIComponent(Q.k||''):''),ctl?{signal:ctl.signal}:{})
+  .then(function(r){clearTimeout(tm);if(!r.ok)throw new Error('http '+r.status);return r.json();})
+  .catch(function(e){clearTimeout(tm);if(n>1)return new Promise(function(res){setTimeout(res,1500);}).then(function(){return bootGet(n-1);});throw e;});}
 if(typeof BOOT!=='string')startApp();
 else if(!EXEC)bootFail();
 else{
@@ -1016,11 +1024,12 @@ else{
  var enL=/^en/i.test(navigator.language||'');
  document.getElementById('screen').innerHTML='<div style="padding:72px 20px;text-align:center"><div style="font-size:22px;font-weight:800;margin-bottom:14px">'+(enL?'Kyungdae Kebab Catering':'경대케밥 단체주문')+'</div><div class="bootspin" style="width:28px;height:28px;margin:0 auto 14px;border:3px solid #d6e2dc;border-top-color:#0f5a46;border-radius:50%;animation:bootspin 1s linear infinite"></div><p class="muted">'+(enL?'Loading… this can take up to 15 seconds.':'불러오는 중입니다… 처음엔 10초쯤 걸릴 수 있어요.')+'</p></div><style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>';
  var pAuth=(Q.state&&(Q.code||Q.error!=null))?api('oauth_finish',{state:Q.state,code:Q.code,error:Q.error}).catch(function(){return {err:'net'};}):Promise.resolve(null);
- Promise.all([fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')+(Q.r?'&r='+encodeURIComponent(Q.r)+'&k='+encodeURIComponent(Q.k||''):'')).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();}),pAuth])
+ Promise.all([bootGet(3),pAuth])
  .then(function(rr){
    BOOT=rr[0];if(rr[1])BOOT.auth=rr[1];
    if(Q.state)try{history.replaceState(null,'',location.pathname+(Q.t==='1'?'?t=1':''));}catch(x){}
-   startApp();
+   /* 화면 그리다 오류가 나면 도는 화면에 멈추지 말고 알린다 */
+   try{startApp();}catch(e){bootFail(e);}
  },bootFail);
 }
 })();
