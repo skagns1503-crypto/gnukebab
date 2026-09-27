@@ -953,7 +953,7 @@ else{
  var enL=/^en/i.test(navigator.language||'');
  document.getElementById('screen').innerHTML='<div style="padding:72px 20px;text-align:center"><div style="font-size:22px;font-weight:800;margin-bottom:14px">'+(enL?'Kyungdae Kebab Catering':'경대케밥 단체주문')+'</div><div class="bootspin" style="width:28px;height:28px;margin:0 auto 14px;border:3px solid #d6e2dc;border-top-color:#0f5a46;border-radius:50%;animation:bootspin 1s linear infinite"></div><p class="muted">'+(enL?'Loading… this can take up to 15 seconds.':'불러오는 중입니다… 처음엔 10초쯤 걸릴 수 있어요.')+'</p></div><style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>';
  var pAuth=(Q.state&&(Q.code||Q.error!=null))?api('oauth_finish',{state:Q.state,code:Q.code,error:Q.error}).catch(function(){return {err:'net'};}):Promise.resolve(null);
- Promise.all([fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();}),pAuth])
+ Promise.all([fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')+(Q.r?'&r='+encodeURIComponent(Q.r)+'&k='+encodeURIComponent(Q.k||''):'')).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();}),pAuth])
  .then(function(rr){
    BOOT=rr[0];if(rr[1])BOOT.auth=rr[1];
    if(Q.state)try{history.replaceState(null,'',location.pathname+(Q.t==='1'?'?t=1':''));}catch(x){}
