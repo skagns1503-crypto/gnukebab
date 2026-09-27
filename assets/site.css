@@ -22,6 +22,7 @@ table.hist.areas{max-width:760px}@media (max-width:640px){table.hist.areas td,ta
 table.hist small{display:block;font-size:12px;font-weight:400;color:var(--sub)}
 .note-in{background:#fff;border-left:4px solid var(--red);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0 0;max-width:760px}
 table.hist tr.sum td{border-bottom:0;border-top:2px solid var(--ink);background:#fff;font-weight:800}
+table.pp{border-collapse:collapse;width:100%;font-size:15px;background:var(--card);margin:8px 0 14px}table.pp th,table.pp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}table.pp th{background:#FAF6EF;font-weight:600;font-size:14px}.pp-wrap{overflow-x:auto}
 table.board a{text-decoration:none}table.board a:hover{text-decoration:underline}
 table.board .tag{display:inline-block;min-width:52px;text-align:center;font-size:12px;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-right:8px;white-space:nowrap}
 table.board .tag.blog{color:#03a94d;border-color:#03a94d}
