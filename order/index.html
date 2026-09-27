@@ -74,6 +74,7 @@ button{cursor:pointer}
 .cbtn.tel{background:var(--pine-soft);border-color:var(--pine);color:var(--pine)}
 .cbtn.map{color:var(--naver);border-color:var(--naver)}
 a.btn{text-decoration:none}
+.tosite{display:inline-block;margin:-4px 0 2px;font-size:13px;font-weight:600;color:var(--pine);text-decoration:none}
 .btn.social.google{color:var(--ink)}
 .cbtn.ig{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%);border-color:transparent;color:#fff}
 @media (max-width:420px){.cbtn span{display:none}.cbtn{padding:5px 7px}}
@@ -406,7 +407,9 @@ function authBox(forOrder){
     return '<button type="button" class="btn social '+k+'" data-act="social">'+lb+' <span class="soon">'+T('· 준비 중','· coming soon')+'</span></button>';}).join('')+
   '</div>';}
 function HOMEBODY(logged,cards){
- return '<div class="langsw"><button type="button" data-act="lang" data-l="ko" aria-pressed="'+(S.lang==='ko')+'">한국어</button><button type="button" data-act="lang" data-l="en" aria-pressed="'+(S.lang==='en')+'">English</button></div>'+
+ /* 09-27 사장님: 주문 첫 화면에서 홈페이지로 돌아가기 */
+ return '<a class="tosite" href="https://gnukebab.co.kr/'+(S.lang==='en'?'en/':'')+'" target="_top">‹ '+T('경대케밥 홈페이지','Kyungdae Kebab website')+'</a>'+
+ '<div class="langsw"><button type="button" data-act="lang" data-l="ko" aria-pressed="'+(S.lang==='ko')+'">한국어</button><button type="button" data-act="lang" data-l="en" aria-pressed="'+(S.lang==='en')+'">English</button></div>'+
  '<div class="hero"><div class="brand">'+esc(T(BRAND.name_ko,BRAND.name_en))+'</div><div class="tagline">'+esc(T(BRAND.tag_ko,BRAND.tag_en))+'</div><p>'+esc(T(BRAND.sub_ko,BRAND.sub_en))+'</p>'+
  '<ul class="facts">'+(saleLine()?'<li>'+saleLine()+'</li>':'')+'<li>'+T('배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'까지 주문','Order by '+hourLabel()+', '+CFG.deadlineDaysBefore+' days ahead')+'</li><li>'+T('계좌이체 · 현금영수증','Bank transfer · cash receipt')+'</li></ul></div>'+
  '<div class="auth" style="margin-top:2px">'+
