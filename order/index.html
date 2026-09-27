@@ -366,7 +366,7 @@ function calc(items,cityId){
 }
 function block(){
   var c=city(S.city);
-  if(!c)return {kind:'need',msg:T('배달 도시를 골라 주세요.','Choose a delivery city.')};
+  if(!c)return {kind:'need',msg:T('배달 지역을 선택해 주세요.','Choose a delivery area.')};
   if(c.out)return {kind:'inq',code:'out_of_area',msg:T('아직 정기 배달 지역이 아닙니다. 문의를 남기시면 따로 견적을 드립니다.','We don\'t deliver there yet. Leave an inquiry and we\'ll send a quote.')};
   if(S.date===null)return {kind:'need',msg:T('배달 날짜를 골라 주세요.','Choose a delivery date.')};
   var k=calc(S.qty,S.city);
@@ -482,7 +482,7 @@ SCR.signup=function(){
 
 SCR.where=function(){
  var c=city(S.city);
- var opts='<option value="">'+T('도시를 고르세요','Choose a city')+'</option>'+CITIES.map(function(x){return '<option value="'+x.id+'"'+(x.id===S.city?' selected':'')+'>'+esc(L(x))+'</option>';}).join('');
+ var opts='<option value="">'+T('지역을 선택해 주세요','Choose an area')+'</option>'+CITIES.map(function(x){return '<option value="'+x.id+'"'+(x.id===S.city?' selected':'')+'>'+esc(L(x))+'</option>';}).join('');
  var info='';
  if(c&&c.out)info='<div class="note bad">'+T('아직 정기 배달 지역이 아닙니다. 다음 화면에서 문의를 남기실 수 있습니다.','Not a regular delivery area yet. You can send an inquiry on the next screen.')+'</div>';
  else if(c)info='<div class="note ok">'+(c.area?'<b>'+esc(c.area)+'</b> · ':'')+T('배달비','Delivery fee')+' <b>'+(c.fee?won(c.fee):T('없음','free'))+'</b> · '+T('최소 주문 금액','Minimum order')+' <b>'+won(c.minAmount)+'</b>'+(c.min?' <span class="muted">('+T('약 '+c.min+'인분','about '+c.min+' meals')+')</span>':'')+'<div class="small muted">'+T('최소 주문 금액은 배달비를 뺀 메뉴 금액 기준이고, 인분은 섞어 시킬 때의 예상치입니다.','The minimum counts the menu amount only (no delivery fee); the meal count is an estimate.')+'</div></div>';
@@ -493,9 +493,9 @@ SCR.where=function(){
  var sel=S.date?avail(S.date):null;
  var dlNote=sel?'<div class="small muted">'+T('이 날 주문 마감: ','Order deadline: ')+'<b>'+fdt(sel.deadline)+'</b></div>':'<div class="small muted">'+T('주문 마감은 배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'입니다. 남은 수량은 점심·저녁 합쳐 하루 '+CAP+'인분 기준.','Orders close at '+hourLabel()+' '+CFG.deadlineDaysBefore+' days before delivery. Daily limit: '+CAP+' meals, lunch and dinner combined.')+EX()+'</div>';
  var canNext=c&&(c.out||S.date!==null);
- return {title:T('어디로, 언제','Where and when'),back:true,right:'my',body:
- '<h2 class="h">'+T('어디로, 언제 받으세요?','Where and when should we deliver?')+'</h2>'+
- '<div class="field"><label for="f-city">'+T('배달 도시','Delivery city')+'</label><select class="input" id="f-city" data-change="city">'+opts+'</select></div>'+info+
+ return {title:T('배달 일정','Delivery schedule'),back:true,right:'my',body:
+ '<h2 class="h">'+T('배달 지역과 날짜·시간을 선택해 주세요','Choose the delivery area, date and time')+'</h2>'+
+ '<div class="field"><label for="f-city">'+T('배달 지역','Delivery area')+'</label><select class="input" id="f-city" data-change="city">'+opts+'</select></div>'+info+
  (c&&c.out?'':'<div class="field"><label>'+T('배달 날짜','Delivery date')+'</label><div class="dates">'+dates+'</div>'+dlNote+'</div>'+
  '<div class="field"><label>'+T('도착 시간','Arrival time')+EX()+'</label>'+
  ['lunch','dinner'].map(function(s){return '<div class="small muted" style="margin-top:2px">'+(s==='lunch'?T('점심','Lunch'):T('저녁','Dinner'))+'</div><div class="times">'+TIMES[s].map(function(t){return '<button type="button" class="slot" data-act="time" data-s="'+s+'" data-t="'+t+'" aria-pressed="'+(S.time===t)+'">'+t+'</button>';}).join('')+'</div>';}).join('')+
@@ -549,14 +549,14 @@ SCR.menu=function(){
  if(!bl)btn='<button type="button" class="btn primary" data-act="go" data-to="addr">'+T('받는 곳 입력','Enter delivery details')+' · '+won(k.total)+'</button>';
  else if(bl.kind==='inq')btn='<button type="button" class="btn warn" data-act="inq">'+T('문의하기','Send an inquiry')+'</button>';
  else btn='<button type="button" class="btn primary" disabled>'+T('받는 곳 입력','Enter delivery details')+'</button>';
- return {title:esc(L(c))+' · '+fd(S.date)+' · '+tlabel(S.slot,S.time),back:true,right:'my',body:'<h2 class="h">'+T('무엇을 몇 개?','What and how many?')+'</h2><div class="card" style="padding-block:4px">'+rows+'</div>'+sum,foot:note+btn};};
+ return {title:esc(L(c))+' · '+fd(S.date)+' · '+tlabel(S.slot,S.time),back:true,right:'my',body:'<h2 class="h">'+T('주문','Order')+'</h2><div class="card" style="padding-block:4px">'+rows+'</div>'+sum,foot:note+btn};};
 
 var SPOTS=[['lobby','건물 1층 로비','Ground-floor lobby'],['gate','정문','Main gate'],['hall','강당·행사장','Hall / event room'],['office','사무실 앞','Office door'],['other','직접 적기','Other']];
 function cityMatches(sel,c){if(!sel||sel.manual||!c||!c.match)return true;return sel.sido===c.match||String(sel.sigungu||'').indexOf(c.match)===0;}
 SCR.addr=function(){
  var k=calc(S.qty,S.city),u=S.user||{},F=S.form,sel=S.addrSel,c=city(S.city);
  var top;
- if(sel)top='<div class="card" style="gap:4px"><div class="row">'+(sel.zip?'<span class="pill p-paid">'+esc(sel.zip)+'</span>':'')+'<button type="button" class="link small" data-act="addrclear" style="margin-left:auto;padding:0">'+T('다시 찾기','Change')+'</button></div><b>'+esc(sel.road)+(sel.bld?' ('+esc(sel.bld)+')':'')+'</b>'+(sel.jibun?'<span class="small muted">'+T('지번 ','Lot ')+esc(sel.jibun)+'</span>':'')+(!cityMatches(sel,c)?'<div class="note warn small">'+T('주문하신 도시('+L(c)+')와 다른 곳입니다. 배달비·최소 수량이 달라질 수 있습니다.','This address is outside '+L(c)+'. Delivery fee and minimum may change.')+'</div>':'')+'</div>';
+ if(sel)top='<div class="card" style="gap:4px"><div class="row">'+(sel.zip?'<span class="pill p-paid">'+esc(sel.zip)+'</span>':'')+'<button type="button" class="link small" data-act="addrclear" style="margin-left:auto;padding:0">'+T('다시 찾기','Change')+'</button></div><b>'+esc(sel.road)+(sel.bld?' ('+esc(sel.bld)+')':'')+'</b>'+(sel.jibun?'<span class="small muted">'+T('지번 ','Lot ')+esc(sel.jibun)+'</span>':'')+(!cityMatches(sel,c)?'<div class="note warn small">'+T('주문하신 지역('+L(c)+')와 다른 곳입니다. 배달비·최소 수량이 달라질 수 있습니다.','This address is outside '+L(c)+'. Delivery fee and minimum may change.')+'</div>':'')+'</div>';
  else if(window.daum&&window.daum.Postcode)top='<div class="field"><label>'+T('배달 주소 찾기','Find address')+'</label>'+(S.addrOpen?'<div class="pc" id="pc"></div>':'<button type="button" class="btn" data-act="addropen">🔍 '+T('도로명·건물명·지번으로 주소 검색','Search by street, building or lot')+'</button>')+'</div>';
  else top='<div class="field"><label for="f-addr-road">'+T('배달 주소','Delivery address')+'</label><div class="row"><input class="input grow" id="f-addr-road" value="'+esc(F['f-addr-road']||'')+'" placeholder="'+T('도로명 주소 (예: 진주대로 501)','Street address')+'"><button type="button" class="btn sm" data-act="addrmanual">'+T('확인','OK')+'</button></div><span class="small muted">'+T('주소 검색을 불러오지 못해 직접 적는 칸으로 바꿨습니다.','Address search is unavailable, so please type the address.')+'</span></div>';
  var more=sel?'<div class="field"><label for="f-addr2">'+T('상세 주소','Detailed address')+'</label><input class="input" id="f-addr2" value="'+esc(F['f-addr2']||'')+'" placeholder="'+T('건물 이름·층·호수 (예: 국제관 2층 201호)','Building, floor, room')+'"></div>'+
@@ -811,7 +811,7 @@ document.addEventListener('focusin',function(e){
  setTimeout(function(){if(document.activeElement===t){try{t.select();}catch(x){}}},0);
 });
 function go(to){S.hist.push(S.screen);S.screen=to;render();}
-function home(to){S.hist=[];S.screen=to;render();}
+function home(to){S.hist=(ROLE==='customer'&&to==='where')?['start']:[];S.screen=to;render();}  /* 09-27 사장님 「배달 일정에서 전 화면으로」 — 로그인·가입 뒤에도 첫 화면으로 돌아갈 수 있게 */
 /* 09-27(9) 사장님 「돌려보내라」 — 다른 길로 가입한 번호면 창으로 그 길을 알리고 로그인 화면으로(소셜로 막 들어온 표는 버린다) */
 function sendBack(e,out){if(out){S.sess=null;lsSet('sess',null);S.user=null;lsSet('profile',null);}S.social='';S.verified=false;S.codeSent=false;S.vt='';clearPw();home('start');notice(T(e.ko,e.en));}
 function notice(m){var d=document.getElementById('modal'),b=document.getElementById('modal-ok');document.getElementById('modal-msg').textContent=m;b.textContent=T('확인','OK');d.hidden=false;b.onclick=function(){d.hidden=true;};setTimeout(function(){b.focus();},50);}
