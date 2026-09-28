@@ -260,6 +260,14 @@ a.tel{color:var(--pine);font-weight:700;text-decoration:none}
 .stars button[aria-pressed="true"]{color:var(--saffron)}
 .stars.ro{font-size:17px;color:var(--saffron);letter-spacing:1px}
 .rvtext{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+/* 14단계 호텔 입구 */
+.card.hotel{border-color:var(--pine);gap:8px}
+.hotelname{font-size:19px;font-weight:800;color:var(--pine)}
+.btn.hbtn{flex-direction:column;align-items:flex-start;text-align:left;gap:2px;height:auto;min-height:56px;padding:10px 14px;white-space:normal}
+.btn.hbtn b,.btn.hbtn span{display:block;width:100%}
+.btn.hbtn b{font-size:16px}
+.btn.hbtn span{font-size:12.5px;font-weight:500;opacity:.9;margin-top:2px}
+.paybox{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px dashed var(--pine);border-radius:10px}
 </style>
 </head>
 <body>
@@ -283,10 +291,19 @@ var Q={};location.search.replace(/[?&]([^=&]+)=([^&]*)/g,function(m,k,v){Q[k]=de
 
 var BRAND,CFG,CAP,CITIES,MENU,TIMES,AVAIL,OFFSET=0,ROLE='customer',KEY='';
 var CONTACT={};
+/* 14단계 호텔 입구 — QR 주소 ?h=코드. 소셜 로그인에서 돌아오면 ?h 가 사라지므로 이 기기에 3일 남겨 둔다 */
+var HOTEL=null,ROOM=null,HCODE='';
+(function(){var hs=null;try{hs=JSON.parse(localStorage.getItem('go.hotel')||'null');}catch(e){}
+ if(Q.h){HCODE=String(Q.h).toLowerCase();try{localStorage.setItem('go.hotel',JSON.stringify({h:HCODE,at:Date.now()}));}catch(e){}}
+ else if(hs&&hs.h&&Date.now()-hs.at<3*86400000)HCODE=hs.h;})();
 function applyBoot(b){
   BRAND=b.brand;CFG=b.st;CAP=CFG.cap;CONTACT=b.contact||{};
+  if(b.hotel!==undefined)HOTEL=b.hotel;
+  if(b.room)ROOM=b.room;
   CITIES=b.cities.map(function(c){return {id:c.id,ko:c.name_ko,en:c.name_en,area:c.area,minAmount:c.minAmount,min:c.min,fee:c.fee,match:c.match};})
     .concat([{id:'other',ko:'목록에 없는 곳',en:'Somewhere else',out:true}]);
+  /* 호텔 방 주문은 가짜 도시 한 줄로 계산한다 — 최소 금액·배달비만 다르다(서버 checkRoomOrder 와 같은 값) */
+  if(HOTEL)CITIES.push({id:'__room',ko:HOTEL.name_ko,en:HOTEL.name_en,minAmount:CFG.roomMin,fee:CFG.roomFee,min:0,room:true});
   MENU=b.menu.map(function(m){return {id:m.id,ko:m.name_ko,en:m.name_en,price:m.price,food:m.food,note_ko:m.note_ko,note_en:m.note_en,desc_ko:m.desc_ko||'',desc_en:m.desc_en||''};});
   TIMES={lunch:CFG.lunchTimes,dinner:CFG.dinnerTimes};
   AVAIL=b.avail;OFFSET=b.nowMs-Date.now();
@@ -297,7 +314,7 @@ function nowMs(){return Date.now()+OFFSET;}
 function lsGet(k,d){try{var v=localStorage.getItem('go.'+k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{if(v==null)localStorage.removeItem('go.'+k);else localStorage.setItem('go.'+k,JSON.stringify(v));}catch(e){}}
 
-var SLOTS={lunch:{ko:'점심',en:'Lunch'},dinner:{ko:'저녁',en:'Dinner'}};
+var SLOTS={lunch:{ko:'점심',en:'Lunch'},dinner:{ko:'저녁',en:'Dinner'},now:{ko:'바로 (호텔 방)',en:'ASAP (hotel rooms)'}};
 var ST={requested:{ko:'수락 대기',en:'Awaiting approval'},accepted:{ko:'입금 대기',en:'Awaiting payment'},paid:{ko:'확정',en:'Confirmed'},cooking:{ko:'만드는 중',en:'Preparing'},out:{ko:'배달 중',en:'On the way'},delivered:{ko:'배달 완료',en:'Delivered'},
   rejected:{ko:'거절',en:'Declined'},rejected_auto:{ko:'자동 취소',en:'Closed'},expired_unpaid:{ko:'입금 기한 지남',en:'Payment expired'},cancelled:{ko:'취소',en:'Cancelled'}};
 var CLOSED=['rejected','rejected_auto','expired_unpaid','cancelled'];
@@ -311,8 +328,23 @@ function fresh(){
      city:'',date:null,slot:'lunch',time:TIMES.lunch[2]||TIMES.lunch[0],qty:emptyQty(),
      addrSel:null,addrOpen:false,spot:'',receipt:'phone',mine:null,myOrders:[],ofilter:'all',oid:null,sday:null,omonth:null,oday:null,
      orders:null,ownerAvail:[],inquiryReason:'',delConfirm:false,promo:null,promoMsg:'',promoBad:false,qraw:{},
-     points:null,ptUse:0,ptRaw:null,rvStars:{},reviews:[]};
+     points:null,ptUse:0,ptRaw:null,rvStars:{},reviews:[],hmode:'',roomNo:''};
+  try{if(HOTEL)S.hmode=sessionStorage.getItem('hmode')||'';}catch(e){}
 }
+/* 14단계 — 호텔 입구 안에서 어떤 주문인가: 'room'(방으로 · 오늘 바로) · 'group'(프런트로 · 단체) · ''(보통) */
+function isRoom(){return !!(HOTEL&&S.hmode==='room');}
+function isHotelOrder(){return !!(HOTEL&&(S.hmode==='room'||S.hmode==='group'));}
+function setHmode(k){S.hmode=k;try{if(k)sessionStorage.setItem('hmode',k);else sessionStorage.removeItem('hmode');}catch(e){}}
+/* 방 주문 화면 준비 — 오늘·바로·가짜 도시 */
+function roomSetup(){S.city='__room';S.date=ROOM?ROOM.date:null;S.slot='now';S.time='';}
+function hName(){return HOTEL?T(HOTEL.name_ko,HOTEL.name_en):'';}
+/* 주문 상태 이름 — 현장 카드 결제는 수락 = 확정 */
+function stL(o){if(o.pay==='card_site'&&o.status==='accepted')return T('확정','Confirmed');return L(ST[o.status]||{ko:o.status,en:o.status});}
+/* 주문 한 줄 「어디·언제」 — 방 주문 = 호텔 방 번호 · 오늘 바로 / 호텔 단체 = 호텔 프런트 · 날짜 · 시간 */
+function whereLine(o){var hn=o.hotelName?T(o.hotelName,o.hotelNameEn||o.hotelName):'';
+ if(o.kind==='room')return esc(hn)+' '+esc(o.roomNo)+T('호','')+' · '+T('오늘 바로','today, ASAP');
+ return (hn?esc(hn)+' '+T('프런트','front desk'):esc(T(o.cityName,(city(o.cityId)||{}).en||o.cityName)))+' · '+fd(o.date)+' · '+tlabel(o.slot,o.time);}
+function hm(ms){var d=new Date(ms),h=d.getHours(),m=('0'+d.getMinutes()).slice(-2);return T((h<12?'오전 ':'오후 ')+((h%12)||12)+'시'+(m!=='00'?' '+m+'분':''),((h%12)||12)+(m!=='00'?':'+m:'')+(h<12?' AM':' PM'));}
 
 function T(k,e){return S.lang==='ko'?k:e;}
 function L(o){return S.lang==='ko'?o.ko:o.en;}
@@ -326,7 +358,7 @@ function fdt(ms){var d=new Date(ms),h=d.getHours(),m=('0'+d.getMinutes()).slice(
   return (d.getMonth()+1)+'/'+d.getDate()+' '+((h%12)||12)+(m!=='00'?':'+m:'')+(h<12?' AM':' PM');}
 function ago(ms){var m=Math.max(0,Math.round((nowMs()-ms)/60000));
   if(m<1)return T('방금','Just now');if(m<60)return T(m+'분 전',m+' min ago');var h=Math.round(m/60);if(h<24)return T(h+'시간 전',h+' h ago');var d=Math.round(h/24);return T(d+'일 전',d+' days ago');}
-function tlabel(sl,t){return (sl==='lunch'?T('점심','Lunch'):T('저녁','Dinner'))+(t?' '+t:'');}
+function tlabel(sl,t){if(sl==='now')return T('바로 (호텔 방)','ASAP (hotel room)');return (sl==='lunch'?T('점심','Lunch'):T('저녁','Dinner'))+(t?' '+t:'');}
 /* 09-27 사장님: 「예시」 표시·시험판 띠 삭제 */
 function EX(){return '';}
 function city(id){for(var i=0;i<CITIES.length;i++)if(CITIES[i].id===id)return CITIES[i];return null;}
@@ -364,8 +396,20 @@ function calc(items,cityId){
   var pmax=Math.max(0,goods-cut),pts=S.points&&food>0?Math.min(S.ptUse||0,S.points.balance,pmax):0;
   return {food:food,sub:sub,disc:disc,sale:sale,fee:fee-feeOff,goods:goods,cut:cut,feeOff:feeOff,pts:pts,pmax:pmax,total:goods-cut-pts+fee-feeOff,drinkQ:drinkQ};
 }
+/* 그날 남은 인분 — 방 주문은 오늘(부팅의 ROOM.left) */
+function dayLeft(){if(isRoom())return ROOM?ROOM.left:0;var a=avail(S.date);return a?a.left:0;}
+function roomClosedMsg(){if(!ROOM)return '';if(ROOM.why==='closed_day')return T('오늘은 쉬는 날이라 방 주문을 받지 않습니다. 죄송합니다.','We are closed today, so room orders are not available. Sorry!');
+  return T('방 주문은 '+CFG.roomOpen+'~'+CFG.roomClose+'에 받습니다. 그 시간에 다시 주문해 주세요.','Room orders are taken '+CFG.roomOpen+'–'+CFG.roomClose+'. Please order then.');}
 function block(){
   var c=city(S.city);
+  if(isRoom()){
+    if(!ROOM||!ROOM.open)return {kind:'closed',msg:roomClosedMsg()};
+    var kr=calc(S.qty,S.city);
+    if(kr.food===0)return {kind:'need',msg:T('메뉴 수량을 골라 주세요.','Add some meals.')};
+    if(kr.food>ROOM.left)return {kind:'cap',msg:T('오늘은 '+ROOM.left+'인분까지만 받을 수 있습니다.','Only '+ROOM.left+' meals left today.')};
+    if(kr.goods<c.minAmount)return {kind:'need',msg:T('방 주문은 '+won(c.minAmount)+'부터 받습니다. '+won(c.minAmount-kr.goods)+' 더 담아 주세요.','Room orders start at '+won(c.minAmount)+'. Add '+won(c.minAmount-kr.goods)+' more.')};
+    return null;
+  }
   if(!c)return {kind:'need',msg:T('배달 지역을 선택해 주세요.','Choose a delivery area.')};
   if(c.out)return {kind:'inq',code:'out_of_area',msg:T('아직 정기 배달 지역이 아닙니다. 문의를 남기시면 따로 견적을 드립니다.','We don\'t deliver there yet. Leave an inquiry and we\'ll send a quote.')};
   if(S.date===null)return {kind:'need',msg:T('배달 날짜를 골라 주세요.','Choose a delivery date.')};
@@ -427,15 +471,30 @@ function HOMEBODY(logged,cards){
  return '<a class="tosite" href="https://gnukebab.co.kr/'+(S.lang==='en'?'en/':'')+'" target="_top">‹ '+T('경대케밥 홈페이지','Kyungdae Kebab website')+'</a>'+
  '<div class="langsw"><button type="button" data-act="lang" data-l="ko" aria-pressed="'+(S.lang==='ko')+'">한국어</button><button type="button" data-act="lang" data-l="en" aria-pressed="'+(S.lang==='en')+'">English</button></div>'+
  '<div class="hero"><div class="brand">'+esc(T(BRAND.name_ko,BRAND.name_en))+'</div><div class="tagline">'+esc(T(BRAND.tag_ko,BRAND.tag_en))+'</div><p>'+esc(T(BRAND.sub_ko,BRAND.sub_en))+'</p>'+
- '<ul class="facts">'+(saleLine()?'<li>'+saleLine()+'</li>':'')+'<li>'+T('배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'까지 주문','Order by '+hourLabel()+', '+CFG.deadlineDaysBefore+' days ahead')+'</li><li>'+T('계좌이체 · 현금영수증','Bank transfer · cash receipt')+'</li></ul></div>'+
+ (HOTEL?'':'<ul class="facts">'+(saleLine()?'<li>'+saleLine()+'</li>':'')+'<li>'+T('배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'까지 주문','Order by '+hourLabel()+', '+CFG.deadlineDaysBefore+' days ahead')+'</li><li>'+T('계좌이체 · 현금영수증','Bank transfer · cash receipt')+'</li></ul>')+'</div>'+
+ (HOTEL?hotelBox(logged):'')+
  '<div class="auth" style="margin-top:2px">'+
- '<button type="button" class="btn primary" data-act="go" data-to="'+(logged||S.sess?'where':'login')+'">'+T('주문하기','Start an order')+'</button>'+
+ (HOTEL?'':'<button type="button" class="btn primary" data-act="go" data-to="'+(logged||S.sess?'where':'login')+'">'+T('주문하기','Start an order')+'</button>')+
  ((logged||tokens().length)?'<button type="button" class="btn" data-act="my">'+T('내 주문','My orders')+'</button>':'')+
  /* 09-27 사장님 「로그인 칸이 안 보인다」 — 메뉴 사진 아래 맨 밑에 있던 것을 주문하기 바로 밑으로 */
  (logged?'<p class="hellome">'+esc(S.user.name)+T('님으로 로그인돼 있습니다.',', you are signed in.')+' <button type="button" class="link" data-act="logout">'+T('로그아웃','Sign out')+'</button></p>'
   :'<button type="button" class="btn" data-act="go" data-to="login">'+T('로그인 · 회원가입','Sign in / Sign up')+'</button>')+
  '</div>'+
  '<div class="lbl" style="margin:8px 0 -4px">'+T('단체 메뉴','Group menu')+'</div><div class="mgrid">'+cards+'</div>';}
+/* 14단계 호텔 입구 첫 화면 — 사장님 09-28: 소량(방 앞·오늘 바로)과 단체(프런트) 둘 다 · 결제는 받을 때 카드 */
+function hotelBox(logged){
+ var rm=HOTEL.room,op=ROOM&&ROOM.open;
+ var roomSub=op?T(won(CFG.roomMin)+'부터 · 배달비 '+(CFG.roomFee?won(CFG.roomFee):'없음')+' · 방 앞까지 · 지금 주문 가능 (~'+CFG.roomClose+')',
+   'From '+won(CFG.roomMin)+' · '+(CFG.roomFee?won(CFG.roomFee)+' delivery':'free delivery')+' · to your door · open now (until '+CFG.roomClose+')'):roomClosedMsg();
+ return '<div class="card hotel">'+
+  '<div class="hotelname">🏨 '+esc(hName())+'</div>'+
+  '<div class="small">'+T(esc(HOTEL.name_ko)+'에 묵으시는 손님 전용 주문 화면입니다. 할랄인증 사용한 소고기와 닭고기로 만든 음식을 가져다드립니다.','Order page for guests of '+esc(HOTEL.name_en)+'. We deliver meals made with halal-certified beef and chicken.')+'</div>'+
+  (HOTEL.demo?'<div class="note warn small">'+T('제휴 전 미리보기 화면입니다 — 여기서 넣은 주문은 실제로 들어가지 않습니다.','Preview before partnership — orders placed here are not real.')+'</div>':'')+
+  (rm?'<button type="button" class="btn primary hbtn" data-act="hgo" data-k="room"'+(op?'':' disabled')+'><b>'+T('방으로 주문 — 오늘 바로','Order to your room — today')+'</b><span>'+roomSub+'</span></button>':'')+
+  '<button type="button" class="btn hbtn" data-act="hgo" data-k="group"><b>'+T('단체 주문 — 프런트로','Group order — to the front desk')+'</b><span>'+T('배달 '+CFG.deadlineDaysBefore+'일 전 '+hourLabel()+'까지 · 날짜·시간 지정','Order by '+hourLabel()+', '+CFG.deadlineDaysBefore+' days ahead · choose date & time')+'</span></button>'+
+  '<div class="small muted">💳 '+T('결제는 받으실 때 카드로 해 주세요. 주문할 때는 돈이 나가지 않습니다.','Pay by card when your food arrives — nothing is charged when you order.')+(saleLine()?' · '+saleLine():'')+'</div>'+
+  '<button type="button" class="link small" data-act="hexit" style="align-self:flex-start;padding:0">'+T('호텔 전용 화면 나가기','Leave the hotel page')+'</button>'+
+ '</div>';}
 /* 09-27 사장님: 주문은 로그인·가입 먼저 */
 /* 09-27 사장님: 아이디·비밀번호 가입 추가 · 회원은 한 사람에 하나(같은 휴대폰 번호면 소셜도 같은 회원) */
 SCR.login=function(){var F=S.form;return {title:T('로그인','Sign in'),back:true,body:
@@ -482,7 +541,8 @@ SCR.signup=function(){
 
 SCR.where=function(){
  var c=city(S.city);
- var opts='<option value="">'+T('지역을 선택해 주세요','Choose an area')+'</option>'+CITIES.map(function(x){return '<option value="'+x.id+'"'+(x.id===S.city?' selected':'')+'>'+esc(L(x))+'</option>';}).join('');
+ var opts='<option value="">'+T('지역을 선택해 주세요','Choose an area')+'</option>'+CITIES.filter(function(x){return !x.room;}).map(function(x){return '<option value="'+x.id+'"'+(x.id===S.city?' selected':'')+'>'+esc(L(x))+'</option>';}).join('');
+ var hg=HOTEL&&S.hmode==='group';
  var info='';
  if(c&&c.out)info='<div class="note bad">'+T('아직 정기 배달 지역이 아닙니다. 다음 화면에서 문의를 남기실 수 있습니다.','Not a regular delivery area yet. You can send an inquiry on the next screen.')+'</div>';
  else if(c)info='<div class="note ok">'+(c.area?'<b>'+esc(c.area)+'</b> · ':'')+T('배달비','Delivery fee')+' <b>'+(c.fee?won(c.fee):T('없음','free'))+'</b> · '+T('최소 주문 금액','Minimum order')+' <b>'+won(c.minAmount)+'</b>'+(c.min?' <span class="muted">('+T('약 '+c.min+'인분','about '+c.min+' meals')+')</span>':'')+'<div class="small muted">'+T('최소 주문 금액은 배달비를 뺀 메뉴 금액 기준이고, 인분은 섞어 시킬 때의 예상치입니다.','The minimum counts the menu amount only (no delivery fee); the meal count is an estimate.')+'</div></div>';
@@ -495,7 +555,8 @@ SCR.where=function(){
  var canNext=c&&(c.out||S.date!==null);
  return {title:T('배달 일정','Delivery schedule'),back:true,right:'my',body:
  '<h2 class="h">'+T('배달 지역과 날짜·시간을 선택해 주세요','Choose the delivery area, date and time')+'</h2>'+
- '<div class="field"><label for="f-city">'+T('배달 지역','Delivery area')+'</label><select class="input" id="f-city" data-change="city">'+opts+'</select></div>'+info+
+ (hg?'<div class="field"><label>'+T('배달 장소','Delivery to')+'</label><div class="card" style="padding:10px 12px;gap:2px"><b>🏨 '+esc(hName())+' '+T('프런트','front desk')+'</b><span class="small muted">'+esc(HOTEL.addr)+' · '+T('받을 때 카드 결제','pay by card on delivery')+'</span></div></div>'
+  :'<div class="field"><label for="f-city">'+T('배달 지역','Delivery area')+'</label><select class="input" id="f-city" data-change="city">'+opts+'</select></div>')+info+
  (c&&c.out?'':'<div class="field"><label>'+T('배달 날짜','Delivery date')+'</label><div class="dates">'+dates+'</div>'+dlNote+'</div>'+
  '<div class="field"><label>'+T('도착 시간','Arrival time')+EX()+'</label>'+
  ['lunch','dinner'].map(function(s){return '<div class="small muted" style="margin-top:2px">'+(s==='lunch'?T('점심','Lunch'):T('저녁','Dinner'))+'</div><div class="times">'+TIMES[s].map(function(t){return '<button type="button" class="slot" data-act="time" data-s="'+s+'" data-t="'+t+'" aria-pressed="'+(S.time===t)+'">'+t+'</button>';}).join('')+'</div>';}).join('')+
@@ -524,7 +585,7 @@ function pointsBox(k){
 }
 
 SCR.menu=function(){
- var c=city(S.city),k=calc(S.qty,S.city),bl=block(),a=avail(S.date),left=a?a.left:0,rem=Math.max(0,c.minAmount-k.goods);
+ var c=city(S.city),k=calc(S.qty,S.city),bl=block(),left=dayLeft(),rem=Math.max(0,c.minAmount-k.goods),rm=isRoom();
  /* 09-27(8) 사장님: 사진 크게(한 화면 4개여도 됨) + 메뉴 이름 밑 한 줄 설명 */
  var rows=MENU.map(function(m){var q=S.qty[m.id]||0,note=T(m.note_ko,m.note_en),ds=T(m.desc_ko,m.desc_en);
    return '<div class="item"><div class="thumb">'+(PHOTO[m.id]?'<img src="'+IMGB+m.id+'.jpg?v=8348e8a0" alt="" loading="lazy" onerror="this.remove()">':T('사진','photo'))+'</div><div class="itx"><div class="nm">'+esc(L(m))+'</div><div class="pr">'+(m.price?won(m.price)+(note?' '+esc(note):''):T('가격 미정','Price TBD'))+'</div>'+(ds?'<div class="ds">'+esc(ds)+'</div>':'')+
@@ -542,18 +603,33 @@ SCR.menu=function(){
    '<div><span>'+T('배달비','Delivery')+'</span><span>'+(k.feeOff?T('무료 · '+esc(S.promo.code),'free · '+esc(S.promo.code)):k.fee?won(k.fee):T('없음','free'))+'</span></div>'+
    '<div class="total"><span>'+T('합계','Total')+'</span><span>'+won(k.total)+'</span></div></div>'+
    promoBox()+pointsBox(k)+
-   '<div class="small muted">'+esc(L(c))+' '+T('최소 주문 금액 ','minimum ')+won(c.minAmount)+T(' 중 ',' of ')+won(k.goods)+T(' 담음',' added')+(c.min?T(' (약 '+c.min+'인분)',' (about '+c.min+' meals)'):'')+'</div><div class="bar"><i style="width:'+pct+'%"></i></div>'+
-   '<div class="small muted">'+fd(S.date)+' '+T('남은 수량','left on this day')+' '+left+T('인분','')+'</div></div>';
- var note=bl?'<div class="note '+(bl.kind==='inq'?'warn':bl.kind==='cap'?'bad':'')+'">'+esc(bl.msg)+'</div>':'';
+   '<div class="small muted">'+(rm?T('방 주문 ','Room order ')+T('최소 ','minimum ')+won(c.minAmount):esc(L(c))+' '+T('최소 주문 금액 ','minimum ')+won(c.minAmount))+T(' 중 ',' of ')+won(k.goods)+T(' 담음',' added')+(c.min?T(' (약 '+c.min+'인분)',' (about '+c.min+' meals)'):'')+'</div><div class="bar"><i style="width:'+pct+'%"></i></div>'+
+   (rm?'<div class="small muted">💳 '+T('결제는 받으실 때 카드로','Pay by card on delivery')+'</div>':'<div class="small muted">'+fd(S.date)+' '+T('남은 수량','left on this day')+' '+left+T('인분','')+'</div>')+(isHotelOrder()&&!rm?'<div class="small muted">💳 '+T('결제는 받으실 때 카드로','Pay by card on delivery')+'</div>':'')+'</div>';
+ var note=bl?'<div class="note '+(bl.kind==='inq'?'warn':bl.kind==='cap'||bl.kind==='closed'?'bad':'')+'">'+esc(bl.msg)+'</div>':'';
  var btn;
  if(!bl)btn='<button type="button" class="btn primary" data-act="go" data-to="addr">'+T('받는 곳 입력','Enter delivery details')+' · '+won(k.total)+'</button>';
  else if(bl.kind==='inq')btn='<button type="button" class="btn warn" data-act="inq">'+T('문의하기','Send an inquiry')+'</button>';
  else btn='<button type="button" class="btn primary" disabled>'+T('받는 곳 입력','Enter delivery details')+'</button>';
- return {title:esc(L(c))+' · '+fd(S.date)+' · '+tlabel(S.slot,S.time),back:true,right:'my',body:'<h2 class="h">'+T('주문','Order')+'</h2><div class="card" style="padding-block:4px">'+rows+'</div>'+sum,foot:note+btn};};
+ return {title:rm?esc(hName())+' · '+T('오늘 바로','Today, ASAP'):esc(L(c))+' · '+fd(S.date)+' · '+tlabel(S.slot,S.time),back:true,right:'my',body:'<h2 class="h">'+T('주문','Order')+'</h2>'+
+  (rm?'<div class="note ok small">'+T('방 앞까지 가져다드립니다. 주문하시면 '+CFG.roomAcceptMin+'분 안에 확인 문자를 드려요.','We bring it to your room door. We\'ll confirm by text within '+CFG.roomAcceptMin+' minutes.')+'</div>':'')+'<div class="card" style="padding-block:4px">'+rows+'</div>'+sum,foot:note+btn};};
 
 var SPOTS=[['lobby','건물 1층 로비','Ground-floor lobby'],['gate','정문','Main gate'],['hall','강당·행사장','Hall / event room'],['office','사무실 앞','Office door'],['other','직접 적기','Other']];
 function cityMatches(sel,c){if(!sel||sel.manual||!c||!c.match)return true;return sel.sido===c.match||String(sel.sigungu||'').indexOf(c.match)===0;}
+/* 14단계 호텔 입구 — 주소는 호텔로 고정(서버도 호텔 줄로 덮어씀) · 방 주문은 방 번호 · 결제는 받을 때 카드 · 현금영수증 칸 없음 */
+function addrHotel(){
+ var k=calc(S.qty,S.city),u=S.user||{},F=S.form,rm=isRoom(),rn=(F['f-room']||'').trim();
+ return {title:T('받는 곳','Delivery details'),back:true,body:
+ '<div class="card" style="gap:4px"><b>🏨 '+esc(hName())+(rm?'':' · '+T('프런트','front desk'))+'</b><span class="small muted">'+esc(HOTEL.addr)+'</span></div>'+
+ (rm?'<div class="field"><label for="f-room">'+T('방 번호','Room number')+' <span class="bad">*</span></label><input class="input" id="f-room" inputmode="numeric" maxlength="20" value="'+esc(rn)+'" placeholder="'+T('예: 305','e.g. 305')+'"><span class="small muted">'+T('방 앞까지 가져다드립니다.','We bring it to your room door.')+'</span></div>'
+  :'<div class="field"><label for="f-addr2">'+T('행사·단체 이름 (선택)','Event / group name (optional)')+'</label><input class="input" id="f-addr2" value="'+esc(F['f-addr2']||'')+'" placeholder="'+T('예: 인도네시아 관광단 3층 연회장','e.g. Indonesian tour group, 3F hall')+'"><span class="small muted">'+T('프런트에 맡겨 드립니다.','We hand it over at the front desk.')+'</span></div>')+
+ '<div class="field"><label>'+T('받는 분','Recipient')+'</label><div class="card" style="padding:10px 12px;gap:2px"><b>'+esc(u.name||'')+'</b><span class="small muted">'+esc(u.phone||'')+(u.group?' · '+esc(u.group):'')+'</span></div></div>'+
+ '<div class="field"><label for="f-req">'+T('요청 사항','Requests')+'</label><textarea class="input" id="f-req" placeholder="'+T('예: 도착하면 전화 주세요','e.g. Please call when you arrive')+'">'+esc(F['f-req']||'')+'</textarea></div>'+
+ '<div class="paybox"><span>💳 '+T('받으실 때 카드 결제','Pay by card on delivery')+'</span><b>'+won(k.total)+'</b></div>'+
+ '<div class="note ok small">'+(rm?T('주문을 보내면 가게에서 확인하고 바로 만듭니다('+CFG.roomAcceptMin+'분 안에 확인 문자). 지금은 돈이 나가지 않습니다.','We confirm within '+CFG.roomAcceptMin+' minutes and start cooking right away. You won\'t be charged now.')
+  :T('주문을 보내면 사장님이 확인 후 확정합니다. 결제는 받으실 때 카드로 — 지금은 돈이 나가지 않습니다.','We\'ll review and confirm your order. Pay by card on delivery — you won\'t be charged now.'))+'</div>',
+ foot:'<button type="button" class="btn primary" data-act="place">'+T('주문 보내기','Send order')+' · '+won(k.total)+'</button>'};}
 SCR.addr=function(){
+ if(isHotelOrder())return addrHotel();
  var k=calc(S.qty,S.city),u=S.user||{},F=S.form,sel=S.addrSel,c=city(S.city);
  var top;
  if(sel)top='<div class="card" style="gap:4px"><div class="row">'+(sel.zip?'<span class="pill p-paid">'+esc(sel.zip)+'</span>':'')+'<button type="button" class="link small" data-act="addrclear" style="margin-left:auto;padding:0">'+T('다시 찾기','Change')+'</button></div><b>'+esc(sel.road)+(sel.bld?' ('+esc(sel.bld)+')':'')+'</b>'+(sel.jibun?'<span class="small muted">'+T('지번 ','Lot ')+esc(sel.jibun)+'</span>':'')+(!cityMatches(sel,c)?'<div class="note warn small">'+T('주문하신 지역('+L(c)+')와 다른 곳입니다. 배달비·최소 수량이 달라질 수 있습니다.','This address is outside '+L(c)+'. Delivery fee and minimum may change.')+'</div>':'')+'</div>';
@@ -580,6 +656,15 @@ function embedPostcode(){
 }
 
 function timeline(o){
+ /* 14단계 현장 카드 결제 — 입금 단계 없이 수락 = 확정 */
+ if(o.pay==='card_site'){var rm=o.kind==='room';
+  var cs=[['requested',T('주문 신청','Request sent'),rm?T(CFG.roomAcceptMin+'분 안에 확인해 드립니다.','We confirm within '+CFG.roomAcceptMin+' minutes.'):T('사장님이 '+CFG.acceptHours+'시간 안에 답을 드립니다.','We reply within '+CFG.acceptHours+' hours.')],
+   ['accepted',T('주문 확정','Confirmed'),rm?T('바로 만들기 시작합니다.','We start cooking right away.'):T('약속한 날에 맞춰 준비합니다.','We prepare it for your date.')],
+   ['cooking',T('만드는 중','Preparing'),T('주방에서 준비하고 있습니다.','Your food is being prepared.')],
+   ['out',T('출발','On the way'),rm?T('곧 방 앞에 도착합니다.','Arriving at your door soon.'):T('프런트로 가고 있습니다.','Heading to the front desk.')],
+   ['delivered',T('받으실 때 카드 결제','Pay by card on delivery'),'']];
+  var co=['requested','accepted','cooking','out','delivered'],cc=co.indexOf(o.status);if(cc<0)return '';
+  return '<ol class="tl">'+cs.map(function(s,i){var cls=i<cc||(i===cc&&o.status==='delivered')?'done':i===cc?'now':'';return '<li class="'+cls+'"><div class="dot">'+(cls==='done'?'✓':i+1)+'</div><div><b>'+s[1]+'</b>'+(s[2]?'<span>'+s[2]+'</span>':'')+'</div></li>';}).join('')+'</ol>';}
  var steps=[['requested',T('주문 신청','Request sent'),T('사장님이 '+CFG.acceptHours+'시간 안에 답을 드립니다.','We reply within '+CFG.acceptHours+' hours.')],
   ['accepted',T('사장님 수락 · 입금 안내','Approved · pay by transfer'),T('안내받은 계좌로 입금해 주세요.','Transfer to the account we send you.')],
   ['paid',T('입금 확인 · 주문 확정','Payment received · confirmed'),T('현금영수증을 발급해 드립니다.','We issue your cash receipt.')],
@@ -598,7 +683,9 @@ SCR.status=function(){
  if(o.status==='rejected_auto')extra='<div class="note bad">'+T('죄송합니다. 제때 확인해 드리지 못해 신청이 자동으로 닫혔습니다. 다른 날짜로 다시 신청해 주시면 꼭 챙기겠습니다.','We\'re sorry — we couldn\'t review your request in time, so it closed automatically. Please try again.')+'</div>';
  if(o.status==='expired_unpaid')extra='<div class="note bad">'+T('입금 기한이 지나 주문이 자동으로 취소됐습니다. 다시 신청해 주시면 됩니다.','The payment deadline passed, so the order was cancelled. You\'re welcome to order again.')+'</div>';
  if(o.status==='cancelled')extra='<div class="note bad">'+T('취소된 주문입니다.','This order was cancelled.')+'</div>';
- if(o.status==='requested')extra='<div class="note ok">'+T('사장님 확인을 기다리는 중입니다. '+CFG.acceptHours+'시간 안에 답이 없으면 자동으로 닫힙니다.','Waiting for approval. If there\'s no reply within '+CFG.acceptHours+' hours the request closes automatically.')+'</div>';
+ if(o.status==='requested')extra=o.kind==='room'?'<div class="note ok">'+T('가게에서 확인하는 중입니다. '+CFG.roomAcceptMin+'분 안에 답이 없으면 자동으로 닫히고 문자로 알려 드립니다.','We are checking your order. If we can\'t confirm within '+CFG.roomAcceptMin+' minutes it closes automatically and we\'ll text you.')+'</div>'
+  :'<div class="note ok">'+T('사장님 확인을 기다리는 중입니다. '+CFG.acceptHours+'시간 안에 답이 없으면 자동으로 닫힙니다.','Waiting for approval. If there\'s no reply within '+CFG.acceptHours+' hours the request closes automatically.')+'</div>';
+ if(o.pay==='card_site'&&['accepted','cooking','out'].indexOf(o.status)>=0)extra='<div class="paybox"><span>💳 '+T('받으실 때 카드 결제','Pay by card on delivery')+'</span><b>'+won(o.total)+'</b></div>';
  if(o.status==='accepted'&&o.bank){
    extra='<div class="card"><div class="small muted">'+T('입금 계좌','Bank transfer to')+EX()+'</div><div class="acct">'+esc(T(o.bank.name_ko,o.bank.name_en))+' '+esc(o.bank.account)+'</div><div class="small">'+T('예금주 ','Holder ')+esc(T(o.bank.holder_ko,o.bank.holder_en))+'</div>'+
    '<div class="sum"><div class="total"><span>'+T('입금할 금액','Amount')+'</span><span>'+won(o.total)+'</span></div></div>'+
@@ -608,7 +695,7 @@ SCR.status=function(){
  if(o.status==='delivered')extra=reviewBox(o)+'<button type="button" class="btn" data-act="reorder">'+T('같은 구성으로 다시 주문','Reorder the same')+'</button>';
  var active=['requested','accepted','paid','out'].indexOf(o.status)>=0;
  return {title:T('주문 ','Order ')+o.id,back:false,right:'my',body:
-  '<div class="card"><div class="row"><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span><span class="small muted">'+esc(T(o.cityName,(city(o.cityId)||{}).en||o.cityName))+' · '+fd(o.date)+' · '+tlabel(o.slot,o.time)+'</span></div>'+
+  '<div class="card"><div class="row"><span class="pill '+pillCls(o.status)+'">'+stL(o)+'</span><span class="small muted">'+whereLine(o)+'</span></div>'+
   itemsMk(o)+'<div class="sum"><div class="total"><span>'+T('합계','Total')+'</span><span>'+won(o.total)+'</span></div></div></div>'+extra+timeline(o),
   foot:(active?'<button type="button" class="btn" data-act="refresh">↻ '+T('상태 새로고침','Refresh status')+'</button>':'<button type="button" class="btn" data-act="neworder">'+T('새 주문','New order')+'</button>')+
    '<button type="button" class="btn" data-act="gohome">'+T('처음으로','Home')+'</button>'};};
@@ -640,7 +727,7 @@ SCR.inquiry=function(){
 
 SCR.my=function(){
  var u=S.user||{};
- var list=S.myOrders.length?S.myOrders.map(function(o){return '<button type="button" class="ocard" data-act="myopen" data-id="'+esc(o.id)+'"><div class="top"><span class="who">'+esc(o.id)+'</span><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span></div><div class="meta">'+esc(T(o.cityName,(city(o.cityId)||{}).en||o.cityName))+' · '+fd(o.date)+' · '+won(o.total)+'</div></button>';}).join(''):'<p class="muted" style="margin:0">'+T('아직 주문이 없습니다.','No orders yet.')+'</p>';
+ var list=S.myOrders.length?S.myOrders.map(function(o){return '<button type="button" class="ocard" data-act="myopen" data-id="'+esc(o.id)+'"><div class="top"><span class="who">'+esc(o.id)+'</span><span class="pill '+pillCls(o.status)+'">'+stL(o)+'</span></div><div class="meta">'+esc(T(o.cityName,(city(o.cityId)||{}).en||o.cityName))+' · '+fd(o.date)+' · '+won(o.total)+'</div></button>';}).join(''):'<p class="muted" style="margin:0">'+T('아직 주문이 없습니다.','No orders yet.')+'</p>';
  return {title:T('내 정보·주문','My account'),back:true,body:
  '<div class="card"><dl class="kv"><dt>'+T('이름','Name')+'</dt><dd>'+esc(u.name)+'</dd><dt>'+T('단체','Organization')+'</dt><dd>'+esc(u.group)+'</dd><dt>'+T('휴대폰','Phone')+'</dt><dd>'+esc(u.phone)+'</dd><dt>'+T('로그인','Login')+'</dt><dd>'+T('휴대폰 번호','Phone number')+'</dd><dt>'+T('알림','Alerts')+'</dt><dd>'+T('이 화면에서 확인 (문자 알림은 준비 중)','Check here (SMS alerts coming soon)')+'</dd></dl></div>'+
  (S.points?'<div class="card"><div class="row"><span class="lbl" style="margin:0">'+T('내 포인트','My points')+'</span><b style="margin-left:auto;font-size:18px">'+ptWon(S.points.balance)+'</b></div>'+ptExpLine(S.points)+
@@ -651,7 +738,7 @@ SCR.my=function(){
 
 /* owner */
 function who(o){return o.group||o.name||'';}
-function ocard(o){return '<button type="button" class="ocard" data-act="odetail" data-id="'+esc(o.id)+'"><div class="top"><span class="who">'+esc(who(o))+(o.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span></div><div class="meta">'+esc(o.id)+' · '+fd(o.date)+' '+tlabel(o.slot,o.time)+' · '+esc(o.cityName)+'</div><div class="meta">'+o.food+T('인분',' meals')+' · '+won(o.total)+' · '+ago(o.createdMs)+'</div></button>';}
+function ocard(o){return '<button type="button" class="ocard" data-act="odetail" data-id="'+esc(o.id)+'"><div class="top"><span class="who">'+esc(who(o))+(o.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span><span class="pill '+pillCls(o.status)+'">'+stL(o)+'</span></div><div class="meta">'+esc(o.id)+' · '+whereLine(o)+(o.pay==='card_site'?' · 💳':'')+'</div><div class="meta">'+o.food+T('인분',' meals')+' · '+won(o.total)+' · '+ago(o.createdMs)+'</div></button>';}
 function loading(title){return {title:title,back:false,right:'reload',body:'<p class="muted">'+T('불러오는 중…','Loading…')+'</p>',foot:''};}
 SCR.o_list=function(){
  if(S.orders===null)return loading(T('사장님 — 단체주문','Owner — group orders'));
@@ -725,18 +812,22 @@ SCR.o_detail=function(){
  var o=findOrder(S.oid),act='';if(!o)return SCR.o_list();
  var rno=o.receiptNo||o.phone;
  var receipt='<div class="receipt"><div class="small muted">'+T('매장 단말기에 이대로 입력 — 현금영수증 ','Enter on the store terminal — cash receipt ')+'('+(o.receiptType==='biz'?T('지출증빙','business'):T('소득공제','personal'))+')</div><div class="big">'+esc(rno)+'</div><div class="big">'+won(o.total)+'</div></div>';
- if(o.status==='requested')act='<div class="row"><button type="button" class="btn danger" data-act="set" data-to="rejected">'+T('거절','Decline')+'</button><button type="button" class="btn primary" data-act="set" data-to="accepted">'+T('수락 → 입금 안내','Approve → payment details')+'</button></div>';
- if(o.status==='accepted')act='<button type="button" class="btn primary" data-act="set" data-to="paid">'+T('입금 확인 (은행 알림 보고 누르기)','Mark as paid (after bank alert)')+'</button>';
+ var card=o.pay==='card_site';
+ /* 14단계 현장 카드 결제 — 수락 = 확정, 입금 확인 없이 바로 만들기·출발. 현금영수증 대신 받을 금액 */
+ if(card)receipt='<div class="receipt"><div class="small muted">'+T('받을 때 카드 결제 (단말기 챙기기)','Collect by card on delivery (bring the terminal)')+'</div><div class="big">'+won(o.total)+'</div></div>';
+ if(o.status==='requested')act='<div class="row"><button type="button" class="btn danger" data-act="set" data-to="rejected">'+T('거절','Decline')+'</button><button type="button" class="btn primary" data-act="set" data-to="accepted">'+(card?T('수락 → 확정 (현장 카드)','Approve → confirmed (card on delivery)'):T('수락 → 입금 안내','Approve → payment details'))+'</button></div>';
+ if(o.status==='accepted'&&card)act='<div class="row"><button type="button" class="btn" data-act="set" data-to="out">'+T('바로 출발','Leaving now')+'</button><button type="button" class="btn primary" data-act="set" data-to="cooking">'+T('만드는 중','Start preparing')+'</button></div>';
+ else if(o.status==='accepted')act='<button type="button" class="btn primary" data-act="set" data-to="paid">'+T('입금 확인 (은행 알림 보고 누르기)','Mark as paid (after bank alert)')+'</button>';
  if(o.status==='paid')act='<div class="row"><button type="button" class="btn" data-act="set" data-to="out">'+T('바로 출발','Leaving now')+'</button><button type="button" class="btn primary" data-act="set" data-to="cooking">'+T('만드는 중','Start preparing')+'</button></div>';
  if(o.status==='cooking')act='<button type="button" class="btn primary" data-act="set" data-to="out">'+T('출발 (직원 대신 누르기)','Leaving now (for staff)')+'</button>';
  if(o.status==='out')act='<button type="button" class="btn" data-act="set" data-to="delivered">'+T('배달 완료 (직원 대신 누르기)','Delivered (for staff)')+'</button>';
- var due=o.status==='requested'?'<p class="small muted" style="margin:0">'+T('수락 기한: ','Approve by: ')+'<b>'+fdt(Math.min(o.acceptDue,o.deadline))+'</b></p>':o.status==='accepted'?'<p class="small muted" style="margin:0">'+T('손님 입금 기한: ','Payment due: ')+'<b>'+fdt(o.payDue)+'</b>'+T(' — 지나면 자동 취소.',' — auto-cancels after.')+'</p>':'';
+ var due=o.status==='requested'?'<p class="small muted" style="margin:0">'+T('수락 기한: ','Approve by: ')+'<b>'+fdt(Math.min(o.acceptDue,o.deadline))+'</b></p>':o.status==='accepted'&&!card?'<p class="small muted" style="margin:0">'+T('손님 입금 기한: ','Payment due: ')+'<b>'+fdt(o.payDue)+'</b>'+T(' — 지나면 자동 취소.',' — auto-cancels after.')+'</p>':'';
  return {title:esc(o.id),back:true,body:
- '<div class="card"><div class="row"><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status]||{ko:o.status,en:o.status})+'</span>'+(o.isTest?'<span class="pill p-test">'+T('시험','test')+'</span>':'')+'<span class="small muted">'+ago(o.createdMs)+'</span></div>'+
- '<dl class="kv"><dt>'+T('단체','Org.')+'</dt><dd><b>'+esc(o.group)+'</b></dd><dt>'+T('이름','Name')+'</dt><dd>'+esc(o.name)+'</dd><dt>'+T('연락처','Phone')+'</dt><dd>'+(o.phone?'<a class="tel" href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a>':'')+'</dd><dt>'+T('배달','Delivery')+'</dt><dd>'+fd(o.date)+' '+tlabel(o.slot,o.time)+' · '+esc(o.cityName)+'</dd><dt>'+T('주소','Address')+'</dt><dd>'+esc(o.addr)+(o.spot?' · '+esc(o.spot):'')+'</dd>'+(o.request?'<dt>'+T('요청','Request')+'</dt><dd>'+esc(o.request)+'</dd>':'')+'</dl></div>'+
+ '<div class="card"><div class="row"><span class="pill '+pillCls(o.status)+'">'+stL(o)+'</span>'+(o.isTest?'<span class="pill p-test">'+T('시험','test')+'</span>':'')+'<span class="small muted">'+ago(o.createdMs)+'</span></div>'+
+ '<dl class="kv"><dt>'+T('단체','Org.')+'</dt><dd><b>'+esc(o.group)+'</b></dd><dt>'+T('이름','Name')+'</dt><dd>'+esc(o.name)+'</dd><dt>'+T('연락처','Phone')+'</dt><dd>'+(o.phone?'<a class="tel" href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a>':'')+'</dd><dt>'+T('배달','Delivery')+'</dt><dd>'+(o.kind==='room'?'<b>'+T('오늘 바로 · 방 앞','Today ASAP · room door')+'</b>':fd(o.date)+' '+tlabel(o.slot,o.time))+' · '+esc(o.cityName)+'</dd>'+(o.hotelName?'<dt>'+T('호텔','Hotel')+'</dt><dd><b>🏨 '+esc(o.hotelName)+(o.kind==='room'?' '+esc(o.roomNo)+'호':' '+T('프런트','front desk'))+'</b> · 💳 '+T('현장 카드','card on delivery')+'</dd>':'')+'<dt>'+T('주소','Address')+'</dt><dd>'+esc(o.addr)+(o.spot?' · '+esc(o.spot):'')+'</dd>'+(o.request?'<dt>'+T('요청','Request')+'</dt><dd>'+esc(o.request)+'</dd>':'')+'</dl></div>'+
  '<div class="card">'+itemsMk(o)+
  '<div class="sum"><div><span>'+T('메뉴 금액','Subtotal')+'</span><span>'+won(o.sub)+'</span></div><div><span>'+T('할인','Discount')+'</span><span>−'+won(o.disc)+'</span></div>'+(o.codeCut?'<div><span>'+T('코드 할인','Code discount')+' '+esc(o.code)+'</span><span>−'+won(o.codeCut)+'</span></div>':'')+(o.pointsUsed?'<div><span>'+T('포인트 사용','Points used')+'</span><span>−'+won(o.pointsUsed)+'</span></div>':'')+'<div><span>'+T('배달비','Delivery')+EX()+'</span><span>'+(o.codeFeeOff?T('무료 · '+esc(o.code),'free · '+esc(o.code)):won(o.fee))+'</span></div><div class="total"><span>'+T('합계','Total')+'</span><span>'+won(o.total)+'</span></div></div></div>'+
- (o.status==='accepted'||o.status==='paid'?receipt:'')+due+
+ (o.status==='accepted'||o.status==='paid'||(card&&['cooking','out'].indexOf(o.status)>=0)?receipt:'')+due+
  (o.review?'<div class="card"><div class="lbl" style="margin:0">'+T('손님 후기','Customer review')+(o.review.hidden?' · '+T('숨김','hidden'):'')+'</div><div class="stars ro">'+starStr(o.review.stars)+'</div><p class="rvtext">'+esc(o.review.text)+'</p><div class="small muted">'+ptWon(o.review.points)+T(' 드림',' given')+'</div></div>':''),
  foot:act};};
 
@@ -750,11 +841,11 @@ SCR.s_today=function(){
  var cal=calendarBox('sday',S.sday,false);
  if(S.sday===null)return {title:T('직원 — 배달일별 할 일','Staff — by delivery day'),back:false,right:'reload',body:calendarBox('sday',null,false)+'<p class="muted">'+T('확정된 주문이 없습니다.','No confirmed orders.')+'</p>',foot:''};
  var list=days[S.sday]||[],make='';
- ['lunch','dinner'].forEach(function(s){var tot={},nm={};list.filter(function(o){return o.slot===s;}).forEach(function(o){o.items.forEach(function(l){tot[l.id]=(tot[l.id]||0)+l.qty;nm[l.id]=l;});});
+ ['now','lunch','dinner'].forEach(function(s){var tot={},nm={};list.filter(function(o){return o.slot===s;}).forEach(function(o){o.items.forEach(function(l){tot[l.id]=(tot[l.id]||0)+l.qty;nm[l.id]=l;});});
    var ks=Object.keys(tot);
    if(ks.length)make+='<div class="card"><div class="lbl" style="margin:0">'+L(SLOTS[s])+' — '+T('만들 것','to prepare')+'</div><div class="mk">'+ks.map(function(id){return '<span>'+esc(iname(nm[id]))+'</span><b>'+tot[id]+'</b>';}).join('')+'</div></div>';});
- var dl=list.map(function(o){var btn=o.status==='paid'?'<button type="button" class="btn sm" data-act="set" data-id="'+esc(o.id)+'" data-to="cooking">'+T('만드는 중','Preparing')+'</button>':o.status==='cooking'?'<button type="button" class="btn sm primary" data-act="set" data-id="'+esc(o.id)+'" data-to="out">'+T('출발','Leaving now')+'</button>':o.status==='out'?'<button type="button" class="btn sm primary" data-act="set" data-id="'+esc(o.id)+'" data-to="delivered">'+T('배달 완료','Delivered')+'</button>':'<span class="pill p-delivered">'+L(ST.delivered)+'</span>';
-   return '<div class="ocard"><div class="top"><span class="who">'+esc(who(o))+(o.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span><span class="pill '+pillCls(o.status)+'">'+L(ST[o.status])+'</span></div><div class="meta">'+tlabel(o.slot,o.time)+' · '+esc(o.addr)+(o.spot?' · '+esc(o.spot):'')+'</div><div class="meta">'+(o.phone?'<a class="tel" href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a>':'')+(o.request?' · '+esc(o.request):'')+'</div><div class="row" style="justify-content:flex-end">'+btn+'</div></div>';}).join('');
+ var dl=list.map(function(o){var btn=o.status==='paid'||(o.status==='accepted'&&o.pay==='card_site')?'<button type="button" class="btn sm" data-act="set" data-id="'+esc(o.id)+'" data-to="cooking">'+T('만드는 중','Preparing')+'</button>':o.status==='cooking'?'<button type="button" class="btn sm primary" data-act="set" data-id="'+esc(o.id)+'" data-to="out">'+T('출발','Leaving now')+'</button>':o.status==='out'?'<button type="button" class="btn sm primary" data-act="set" data-id="'+esc(o.id)+'" data-to="delivered">'+T('배달 완료','Delivered')+'</button>':'<span class="pill p-delivered">'+L(ST.delivered)+'</span>';
+   return '<div class="ocard"><div class="top"><span class="who">'+esc(who(o))+(o.isTest?' <span class="pill p-test">'+T('시험','test')+'</span>':'')+'</span><span class="pill '+pillCls(o.status)+'">'+stL(o)+'</span></div><div class="meta">'+tlabel(o.slot,o.time)+' · '+esc(o.addr)+(o.spot?' · '+esc(o.spot):'')+'</div><div class="meta">'+(o.phone?'<a class="tel" href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a>':'')+(o.request?' · '+esc(o.request):'')+'</div>'+(o.pay==='card_site'?'<div class="meta"><b>💳 '+T('받을 때 카드 결제 ','Collect by card ')+won(o.total)+'</b></div>':'')+'<div class="row" style="justify-content:flex-end">'+btn+'</div></div>';}).join('');
  return {title:T('직원 — 배달일별 할 일','Staff — by delivery day'),back:false,right:'reload',body:cal+
   '<div class="lbl" style="margin:2px 0 -6px">'+(S.sday?fd(S.sday)+T(' 할 일',' — to do'):'')+'</div>'+make+'<div class="lbl" style="margin:4px 0 -6px">'+T('배달 목록','Deliveries')+'</div>'+(dl||'<p class="muted">'+T('이 날은 배달이 없습니다.','No deliveries on this day.')+'</p>')+'<p class="small muted" style="margin:0">'+T('「출발」·「배달 완료」를 누르면 손님 주문 화면에 바로 표시됩니다.','Tapping Leaving now / Delivered updates the customer\'s order page.')+'</p>',foot:''};};
 
@@ -811,7 +902,11 @@ document.addEventListener('focusin',function(e){
  setTimeout(function(){if(document.activeElement===t){try{t.select();}catch(x){}}},0);
 });
 function go(to){S.hist.push(S.screen);S.screen=to;render();}
-function home(to){S.hist=(ROLE==='customer'&&to==='where')?['start']:[];S.screen=to;render();}  /* 09-27 사장님 「배달 일정에서 전 화면으로」 — 로그인·가입 뒤에도 첫 화면으로 돌아갈 수 있게 */
+function home(to){
+ /* 14단계 — 호텔 방 주문은 날짜·시간 고르기 없이 바로 메뉴로(로그인·가입이 끝나면 여기로 온다) */
+ if(ROLE==='customer'&&to==='where'&&isRoom()){roomSetup();S.hist=['start'];S.screen='menu';render();return;}
+ if(ROLE==='customer'&&to==='where'&&HOTEL&&S.hmode==='group'){S.city=HOTEL.cityId;if(S.slot==='now'){S.slot='lunch';S.time=TIMES.lunch[2]||TIMES.lunch[0];}}
+ S.hist=(ROLE==='customer'&&to==='where')?['start']:[];S.screen=to;render();}  /* 09-27 사장님 「배달 일정에서 전 화면으로」 — 로그인·가입 뒤에도 첫 화면으로 돌아갈 수 있게 */
 /* 09-27(9) 사장님 「돌려보내라」 — 다른 길로 가입한 번호면 창으로 그 길을 알리고 로그인 화면으로(소셜로 막 들어온 표는 버린다) */
 function sendBack(e,out){if(out){S.sess=null;lsSet('sess',null);S.user=null;lsSet('profile',null);}S.social='';S.verified=false;S.codeSent=false;S.vt='';clearPw();home('start');notice(T(e.ko,e.en));}
 function notice(m){var d=document.getElementById('modal'),b=document.getElementById('modal-ok');document.getElementById('modal-msg').textContent=m;b.textContent=T('확인','OK');d.hidden=false;b.onclick=function(){d.hidden=true;};setTimeout(function(){b.focus();},50);}
@@ -837,6 +932,10 @@ function handleOrderErr(e){
  // 코드가 그 사이 막혔으면(다 쓰임·기한 지남) 코드를 떼고 메뉴 화면으로 돌려보낸다
  if(String(e.code||'').indexOf('pt_')===0){S.ptUse=0;S.ptRaw=null;toast(T(e.ko,e.en),5000);loadMine(false);home('menu');return;}
  if(String(e.code||'').indexOf('code_')===0){S.promo=null;S.promoBad=true;S.promoMsg=T(e.ko,e.en);toast(T(e.ko,e.en),5000);home('menu');return;}
+ /* 14단계 호텔 방 주문 — 문의로 보내지 않고 그 자리에서 알린다 */
+ if(isRoom()&&['below_min','room_closed','room_no','bad_date','no_hotel','cap'].indexOf(e.code)>=0){notice(T(e.ko,e.en));
+   if(e.code!=='room_no')api('apiBoot').then(function(b){applyBoot(b);if(S.screen==='menu'||S.screen==='addr'){roomSetup();home('where');}});return;}
+ if(e.code==='no_hotel'){notice(T(e.ko,e.en));return;}
  if(e.code==='below_min'||e.code==='out_of_area'){S.inquiryReason=T(e.ko,e.en);go('inquiry');return;}
  toast(T(e.ko,e.en),5000);
  if(['cap','deadline','holiday','bad_date','bad_time'].indexOf(e.code)>=0){
@@ -853,6 +952,12 @@ document.addEventListener('click',function(e){
  if(a==='gohome'){home(HOME[ROLE]);return;}
  if(a==='logout'){S.sess=null;lsSet('sess',null);S.user=null;lsSet('profile',null);home('start');toast(T('로그아웃했습니다.','Signed out.'));return;}
  if(a==='toast'){toast(el.dataset.m);return;}
+ /* 14단계 호텔 입구 단추 — 로그인 전이면 로그인부터(소셜로 나갔다 와도 sessionStorage hmode 로 이어짐) */
+ if(a==='hgo'){setHmode(el.dataset.k);S.qty=emptyQty();S.qraw={};S.date=null;
+   if(!(S.user&&(S.sess||!BOOT.smsLive))){try{sessionStorage.setItem('go','where');}catch(x){}go('login');return;}
+   S.hist=['start'];home('where');return;}
+ if(a==='hexit'){HOTEL=null;HCODE='';setHmode('');try{localStorage.removeItem('go.hotel');}catch(x){}
+   CITIES=CITIES.filter(function(c){return !c.room;});if(S.city==='__room')S.city='';S.slot='lunch';S.time=TIMES.lunch[2]||TIMES.lunch[0];home('start');return;}
  if(a==='social'){toast(T('이 로그인은 준비 중입니다. 지금은 휴대폰 번호로 가입해 주세요.','This sign-in is not ready yet. Please sign up with your phone number.'),4500);return;}
  if(a==='code'){var ph=(S.form['f-phone']||'').replace(/\D/g,'');if(ph.length<10){toast(T('휴대폰 번호를 끝까지 넣어 주세요.','Enter your full mobile number.'));return;}
    call('apiSendCode',{phone:S.form['f-phone'],lang:S.lang},T('인증번호를 보내는 중…','Sending the code…')).then(function(r){
@@ -910,6 +1015,18 @@ document.addEventListener('click',function(e){
    if(!val('i-msg')&&!val('i-where')){toast(T('남길 말을 적어 주세요.','Please write a message.'));return;}
    call('apiInquiry',{reason:S.inquiryReason,area:val('i-where'),message:val('i-msg'),name:u0.name,group:u0.group,phone:u0.phone,lang:S.lang,test:BOOT.test},T('보내는 중…','Sending…')).then(function(r){
      if(r&&r.ok){home('where');toast(T('문의를 보냈습니다. 사장님이 직접 연락드립니다.','Inquiry sent. The owner will contact you.'),4000);}});return;}
+ if(a==='place'&&isHotelOrder()){var uh=S.user||{},rmh=isRoom(),rno=(S.form['f-room']||'').trim();
+   if(rmh&&!rno){toast(T('방 번호를 적어 주세요.','Please enter your room number.'));var fr=document.getElementById('f-room');if(fr)fr.focus();return;}
+   var reqh={hotel:HOTEL.code,kind:rmh?'room':'group',roomNo:rno,cityId:HOTEL.cityId,date:rmh?(ROOM&&ROOM.date):S.date,slot:rmh?'now':S.slot,time:rmh?'':S.time,items:S.qty,
+     name:uh.name,group:uh.group,phone:uh.phone,mkt:uh.mkt,consent:!!uh.consent,addrDetail:rmh?'':(S.form['f-addr2']||'').trim(),request:(S.form['f-req']||'').trim(),
+     lang:S.lang,test:BOOT.test,code:S.promo?S.promo.code:'',sess:S.sess,points:calc(S.qty,S.city).pts};
+   call('apiPlaceOrder',reqh,T('주문을 보내는 중…','Sending your order…')).then(function(r){
+     if(!r)return;if(!r.ok){handleOrderErr(r.err);return;}
+     var list=lsGet('orders',[]);list.unshift({id:r.order.id,token:r.token});lsSet('orders',list);
+     S.mine=r.order;S.myOrders.unshift(r.order);S.promo=null;S.promoMsg='';S.promoBad=false;S.form['f-promo']='';S.qraw={};
+     S.ptUse=0;S.ptRaw=null;if(r.points)S.points=r.points;
+     home('status');toast(T('주문을 보냈습니다. 가게에 알림이 갔습니다.','Order sent. The shop has been notified.'),4000);
+     api('apiBoot').then(applyBoot);});return;}
  if(a==='place'){if(!S.addrSel)return;var u=S.user||{},sp=SPOTS.filter(function(x){return x[0]===S.spot;})[0];
    if(S.receipt==='biz'&&(S.form['f-bizno']||'').replace(/\D/g,'').length<10){toast(T('사업자등록번호 10자리를 넣어 주세요.','Please enter the 10-digit business number.'));return;}
    var sel=S.addrSel,req={cityId:S.city,date:S.date,slot:S.slot,time:S.time,items:S.qty,name:u.name,group:u.group,phone:u.phone,mkt:u.mkt,consent:!!u.consent,
@@ -959,7 +1076,8 @@ document.addEventListener('click',function(e){
      if(!r)return;if(!r.ok){toast(T(r.err.ko,r.err.en),5000);}
      if(r.order){S.orders=S.orders.map(function(x){return x.id===r.order.id?r.order:x;});}
      var sm={sent:T(' 손님께 문자를 보냈습니다.',' The customer was texted.'),dry:T(' (시험 모드 — 손님 문자는 안 나감)',' (Test mode — no text sent)'),fail:T(' ⚠️ 손님 문자가 실패했습니다 — 직접 연락해 주세요.',' ⚠️ The text failed — please contact the customer.')}[r.sms]||'';
-     if(r.ok)toast({accepted:T('수락했습니다. 손님 주문 화면에 입금 계좌가 떴습니다.','Approved. Bank details now show on the customer\'s page.')+sm,
+     if(r.ok)toast({accepted:(r.order&&r.order.pay==='card_site'?T('확정했습니다. 직원 화면에 올라갔습니다(받을 때 카드 결제).','Confirmed. It now shows on the staff screen (card on delivery).'):T('수락했습니다. 손님 주문 화면에 입금 계좌가 떴습니다.','Approved. Bank details now show on the customer\'s page.'))+sm,
+       cooking:T('만드는 중으로 표시했습니다.','Marked as preparing.')+sm,
        rejected:T('거절했습니다. 손님 주문 화면에 사과 안내가 떴습니다.','Declined. The customer\'s page shows an apology.')+sm,
        paid:T('확정했습니다. 직원 화면에 올라갔습니다.','Confirmed. It now shows on the staff screen.')+sm,
        out:T('출발로 표시했습니다.','Marked as on the way.')+sm,delivered:T('배달 완료로 표시했습니다.','Marked as delivered.')}[to2],4000);
@@ -994,7 +1112,9 @@ function startApp(){
  if(ROLE==='customer'&&AU){
   if(AU.sess){S.sess=AU.sess;lsSet('sess',AU.sess);
     if(AU.user.needPhone){S.social=AU.provider;S.form['f-name']=AU.user.name||'';S.screen='signup';S.hist=['start'];}
-    else{setLogin(AU.sess,AU.user);var gw=null;try{gw=sessionStorage.getItem('go');sessionStorage.removeItem('go');}catch(e){}if(gw==='where'){S.screen='where';S.hist=['start'];}}}
+    else{setLogin(AU.sess,AU.user);var gw=null;try{gw=sessionStorage.getItem('go');sessionStorage.removeItem('go');}catch(e){}if(gw==='where'){S.screen='where';S.hist=['start'];
+      /* 14단계 — 호텔 입구에서 로그인하러 나갔다 온 길 */
+      if(isRoom()){roomSetup();S.screen='menu';}else if(HOTEL&&S.hmode==='group')S.city=HOTEL.cityId;}}}
   else if(AU.err==='member_exists')setTimeout(function(){notice(T(AU.msg.ko,AU.msg.en));},300);
   else if(AU.err!=='state')setTimeout(function(){toast(AU.err==='cancel'?T('로그인을 취소하셨습니다.','Sign-in was cancelled.'):T('로그인하지 못했습니다. 잠시 뒤 다시 해 주세요.','Sign-in failed. Please try again.'),4500);},300);
  }
@@ -1013,7 +1133,7 @@ function bootFail(e){var en=/^en/i.test(navigator.language||''),why=e&&e.message
   '<button type="button" class="btn primary" onclick="location.href=location.pathname+(Q.t===\'1\'?\'?t=1\':\'\')">'+(en?'Try again':'다시 시도')+'</button>'+(why?'<p class="muted small" style="margin-top:14px">('+why+')</p>':'')+'</div>';}
 /* 설정 받기 — 30초 넘거나 실패하면 두 번 더(1.5초 쉬고). 창구 첫 응답이 6~17초라 한 번 끊겨도 다시 받으면 된다 */
 function bootGet(n){var ctl=window.AbortController?new AbortController():null,tm=ctl?setTimeout(function(){ctl.abort();},30000):0;
- return fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')+(Q.r?'&r='+encodeURIComponent(Q.r)+'&k='+encodeURIComponent(Q.k||''):''),ctl?{signal:ctl.signal}:{})
+ return fetch(EXEC+'?api=boot'+(Q.t==='1'?'&t=1':'')+(Q.r?'&r='+encodeURIComponent(Q.r)+'&k='+encodeURIComponent(Q.k||''):'')+(HCODE&&!Q.r?'&h='+encodeURIComponent(HCODE):''),ctl?{signal:ctl.signal}:{})
   .then(function(r){clearTimeout(tm);if(!r.ok)throw new Error('http '+r.status);return r.json();})
   .catch(function(e){clearTimeout(tm);if(n>1)return new Promise(function(res){setTimeout(res,1500);}).then(function(){return bootGet(n-1);});throw e;});}
 if(typeof BOOT!=='string')startApp();
