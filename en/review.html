@@ -41,7 +41,7 @@ b.disabled=true;b.textContent=RV.busy;
 var chk=vf?duration(vf):Promise.resolve(0);
 chk.then(function(sec){if(sec>61)throw 'video_len';msg(RV.busy_photo);return Promise.all(ph.map(shrink));})
 .then(function(photos){if(!vf)return [photos,''];msg(RV.busy_video+' 0%');return upVideo(vf).then(function(id){return [photos,id];});})
-.then(function(a){msg(RV.busy);return api({fn:'review',lang:RV.lang,nickname:f.elements.nickname.value,stars:st.value,menu:[cat.value,mn.value].filter(String).join(' · '),
+.then(function(a){msg(RV.busy);return api({fn:'review',lang:RV.lang,nickname:f.elements.nickname.value,stars:st.value,menu:mn.value||cat.value,
 body:body,photos:a[0],video_id:a[1],hp:f.elements.hp.value});})
 .then(function(r){if(!r.ok)throw r.code;f.reset();fillMenu();document.getElementById('rvthumbs').innerHTML='';msg(RV.ok,'ok');load();})
 .catch(function(c){msg(c==='video_len'?RV.err_video_len:c==='short'?RV.err_short:c==='video_size'?RV.err_video_size:RV.err,'bad');})
