@@ -81,6 +81,8 @@ main h1{font-size:40px;line-height:1.2;font-weight:800;margin:0 0 14px;letter-sp
 main h2{font-size:24px;font-weight:800;margin:44px 0 12px}
 main p{margin:0 0 14px}
 .lead{font-size:18px}
+.nsteps{padding-left:22px;margin:18px 0}.nsteps li{margin:6px 0}
+.nbtns{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:22px 0}.nbtns .btn{text-align:center;padding:14px 16px}.nbtns .btn.fill{font-size:17px}
 .muted{color:var(--sub);font-size:15px}
 .hero{margin:-40px 0 0;background:var(--card)}
 .hero img{width:100%;display:block;max-height:560px;object-fit:cover}
