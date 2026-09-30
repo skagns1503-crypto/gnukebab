@@ -9,9 +9,9 @@
 ## 주요 페이지
 
 - [메뉴와 가격 · 원산지](https://gnukebab.co.kr/menu.html)
-- [자주 묻는 질문](https://gnukebab.co.kr/faq.html)
+- [자주 묻는 질문](https://gnukebab.co.kr/support.html#faq)
 - [단체주문 · 행사 도시락](https://gnukebab.co.kr/group-order.html)
-- [가게 이야기](https://gnukebab.co.kr/story.html)
+- [가게 이야기](https://gnukebab.co.kr/#story)
 - [English](https://gnukebab.co.kr/en/)
 
 ## 공식 채널
