@@ -251,6 +251,11 @@ label.sub{display:block;font-size:14px;margin-bottom:6px;color:#3B3330}
         <label class="qt" for="one_change">딱 하나만 바꿀 수 있다면요?</label>
         <textarea id="one_change" name="one_change" placeholder="하나만 꼽아주세요"></textarea>
       </div>
+      <div class="q" style="margin:26px 0 0">
+        <label class="qt">가게 이름을 하나 추천해주신다면요?</label>
+        <div class="choices" id="name_pick"></div>
+        <div style="margin-top:10px"><input type="text" id="name_etc" name="name_etc" placeholder="직접 추천하실 이름이 있으면 적어주세요 (필수 아님)"></div>
+      </div>
     </section>
 
     <div class="submit-area">
@@ -282,11 +287,12 @@ var MENUS = [
 var MENU_NAMES = ["케밥","할랄스낵팩","라이스보울","워킹타코"];
 
 var CHOICES = {
-  source:["네이버","인스타","에브리타임","당근","지인 소개","지나가다 봤다","그 밖에"],
+  source:["네이버","인스타","에브리타임","당근","AI 추천(챗GPT·제미나이)","지인 소개","지나가다 봤다","그 밖에"],
   age:["10대","20대 초","20대 후","30대","40대","50대 이상"],
   sex:["여","남","안 밝힘"],
   life:["대학생","대학원생","취업준비생","직장인","자영업","주부","그 밖에"],
   known:["전혀 몰랐다","이름만 들어봤다","가본 적 있다"],
+  name_pick:["원조할매케밥","데일리케밥","케밥데몬헌터스","케밥농장","김남훈의 케밥공장"],
   again:MENU_NAMES.concat(["없다"]),
   never:MENU_NAMES.concat(["없다"]),
   price_feel:["비싸다","적당하다","싸다"],

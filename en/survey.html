@@ -251,6 +251,11 @@ label.sub{display:block;font-size:14px;margin-bottom:6px;color:#3B3330}
         <label class="qt" for="one_change">If you could change just one thing?</label>
         <textarea id="one_change" name="one_change" placeholder="Just one thing"></textarea>
       </div>
+      <div class="q" style="margin:26px 0 0">
+        <label class="qt">Which name would you pick for our shop?</label>
+        <div class="choices" id="name_pick"></div>
+        <div style="margin-top:10px"><input type="text" id="name_etc" name="name_etc" placeholder="Or suggest your own name (optional)"></div>
+      </div>
     </section>
 
     <div class="submit-area">
@@ -281,11 +286,12 @@ var MENUS = [
 var MENU_NAMES = ["Kebab","Halal Snack Pack","Halal Rice Bowl","Walking Taco"];
 
 var CHOICES = {
-  source:["Naver","Instagram","Everytime","Karrot (Danggeun)","A friend","Walked past","Other"],
+  source:["Naver","Instagram","Everytime","Karrot (Danggeun)","AI (ChatGPT / Gemini)","A friend","Walked past","Other"],
   age:["Teens","Early 20s","Late 20s","30s","40s","50+"],
   sex:["Female","Male","Prefer not to say"],
   life:["University student","Graduate student","Job seeker","Office worker","Self-employed","Homemaker","Other"],
   known:["Never heard of it","Heard the name","Been here before"],
+  name_pick:["Wonjo Halmae Kebab","Daily Kebab","Kebab Demon Hunters","Kebab Farm","Kim Namhoon Kebab Factory"],
   again:MENU_NAMES.concat(["None"]),
   never:MENU_NAMES.concat(["None"]),
   price_feel:["Expensive","Fair","Cheap"],
