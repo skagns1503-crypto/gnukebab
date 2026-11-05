@@ -76,31 +76,37 @@ button.send:disabled{opacity:.6}
 .done{padding-block:56px 40px;text-align:center}
 .done h2{font-family:var(--display);font-size:30px;font-weight:400;margin:0 0 18px}
 .done p{margin:0 0 10px;font-size:15.5px;color:#33403A}
+.langs{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.langs button{font:inherit;font-size:13.5px;font-weight:500;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.6);border-radius:999px;padding:5px 13px;cursor:pointer}
+.langs button.on{background:#fff;color:var(--main);border-color:#fff;font-weight:700}
+.qd{margin:-2px 0 12px;font-size:14.5px;color:#33403A;background:var(--surface);border-radius:8px;padding:11px 13px}
 @media (max-width:420px){.scale{gap:6px}.scale span{min-width:44px;padding:0 8px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="bar"><i id="bar"></i></div>
-<header class="mast"><div class="brand">데일리할랄</div><small>Daily Halal · 할랄 도시락 투표</small></header>
+<header class="mast"><div class="brand" data-t>데일리할랄</div><small data-t>Daily Halal · 할랄 도시락 투표</small>
+  <div class="langs" id="langs"><button type="button" data-lang="ko">한국어</button><button type="button" data-lang="en">English</button><button type="button" data-lang="uz">O‘zbekcha</button></div>
+</header>
 
 <div class="wrap" id="form">
   <div class="intro">
-    <h1>안녕하세요, 데일리할랄입니다.</h1>
-    <p>경남에서 <b>할랄인증 사용한 소고기와 닭고기로 만든 도시락</b>을 준비하고 있어요.</p>
-    <p>오늘 드신 도시락과, 한국에서 평소 어떻게 식사하시는지 들려주세요.</p>
-    <span class="mins">이름은 받지 않습니다. 5분이면 끝나요. 좋은 말보다 솔직한 말이 더 큰 도움이 됩니다.</span>
+    <h1 data-t>안녕하세요, 데일리할랄입니다.</h1>
+    <p data-t>경남에서 <b>할랄인증 사용한 소고기와 닭고기로 만든 도시락</b>을 준비하고 있어요.</p>
+    <p data-t>오늘 드신 도시락과, 한국에서 평소 어떻게 식사하시는지 들려주세요.</p>
+    <span class="mins" data-t>이름은 받지 않습니다. 5분이면 끝나요. 좋은 말보다 솔직한 말이 더 큰 도움이 됩니다.</span>
   </div>
   <div id="qs"></div>
   <div class="submit-area">
-    <button class="send" id="send" type="button">보내기</button>
+    <button class="send" id="send" type="button" data-t>보내기</button>
     <div class="msg" id="msg"></div>
   </div>
 </div>
 
 <div class="wrap done" id="done" hidden>
-  <h2>고맙습니다!</h2>
-  <p>보내 주신 답은 할랄 도시락을 만드는 데 그대로 쓰겠습니다.</p>
+  <h2 data-t>고맙습니다!</h2>
+  <p data-t>보내 주신 답은 할랄 도시락을 만드는 데 그대로 쓰겠습니다.</p>
 </div>
 
 <script>
@@ -143,17 +149,203 @@ var Q = [
  {id:"freq_3m", t:"3개월에 몇 번 정도 시키실 것 같아요?", type:"radio", o:["0번","1번","2~3번","4~6번","7~12번","13번 이상(주 1번 넘게)"]},
  {id:"decision_maker", t:"회사·학교·모임에서 음식 주문을 정하는 분이 본인이거나, 그런 분을 아세요?", type:"radio", o:["내가 정한다","아는 분 있다","없다"]},
  {id:"mosque_meal", t:"모스크에서 다 같이 식사할 때(금요예배 뒤·행사·이프타르) 음식은 주로 어떻게 준비하나요?", type:"radio", o:["신자들이 직접 요리한다","할랄 식당에 주문한다","각자 싸 온다","다 같이 식사하는 일이 거의 없다","잘 모르겠다"]},
+ {id:"agent", t:"함께 도시락을 알려 주실 분을 찾아요", desc:"회사·학교·모임·친구에게 데일리할랄 도시락을 소개해 주시고 그 소개로 주문이 들어오면, 도시락 1개당 1,000원을 드려요. (예: 30개 주문 → 30,000원)", type:"radio", o:["다음에 기회가 되면 해보겠다","아니다"]},
  {sec:"F. 자유롭게"},
  {id:"wish", t:"이 도시락에 꼭 있었으면 하는 음식이나 바라는 점", type:"text"},
  {id:"contact", t:"(선택) 사전 주문·다음 시식회 소식을 받을 연락처와 소속", hint:"안 적으셔도 됩니다", type:"contact"}
 ];
 
+/* 번역 = 한국어 글자 → 영어·우즈벡어(라틴). 사장님 11-05 「영문·우즈벡어로 3개」. 원어민 확인 전 내 번역 */
+var I18N = {en:{
+ "데일리할랄":"Daily Halal",
+ "Daily Halal · 할랄 도시락 투표":"Daily Halal · Halal lunchbox survey",
+ "안녕하세요, 데일리할랄입니다.":"Hello, this is Daily Halal.",
+ "경남에서 <b>할랄인증 사용한 소고기와 닭고기로 만든 도시락</b>을 준비하고 있어요.":"We are preparing <b>lunchboxes made with halal-certified beef and chicken</b> in Gyeongnam.",
+ "오늘 드신 도시락과, 한국에서 평소 어떻게 식사하시는지 들려주세요.":"Please tell us about today’s lunchbox and how you usually eat in Korea.",
+ "이름은 받지 않습니다. 5분이면 끝나요. 좋은 말보다 솔직한 말이 더 큰 도움이 됩니다.":"We don’t ask your name. It takes about 5 minutes. Honest answers help us more than kind ones.",
+ "보내기":"Submit","보내는 중…":"Sending…","고맙습니다!":"Thank you!",
+ "보내 주신 답은 할랄 도시락을 만드는 데 그대로 쓰겠습니다.":"Your answers will be used directly to make our halal lunchbox.",
+ "몇 문항만이라도 답해 주세요":"Please answer at least a few questions",
+ "연락처를 남기시려면 동의에 체크해 주세요":"To leave your contact, please tick the consent box",
+ "보내지 못했어요. 잠시 뒤 다시 눌러 주세요":"Could not send. Please try again in a moment",
+ "2개까지 고를 수 있어요":"You can choose up to 2","{n}개 체크했어요":"{n} selected",
+ "자유롭게 적어 주세요":"Write freely","직접 적어 주세요":"Please write it here","그 밖":"Other","그 밖(직접 쓰기)":"Other (write in)",
+ "전화번호 또는 메일":"Phone or email","소속(회사·학교·모임)":"Organization (company, school, group)",
+ "연락처를 이 용도로만 쓰는 데 동의합니다":"I agree that my contact will be used only for this purpose",
+ "하나만 골라 주세요":"Choose one","여러 개 고르셔도 됩니다":"You can choose several",
+ "없으면 「없음」이라고 적어 주세요":"If none, write “none”","별로였으면 1점 주셔도 됩니다":"Feel free to give 1 if you didn’t like it",
+ "사진을 누르면 체크됩니다 · 여러 개 고르셔도 됩니다":"Tap a photo to select · you can choose several","안 적으셔도 됩니다":"Optional",
+ "A. 어떤 분인가요":"A. About you","B. 한국에서의 식사":"B. Meals in Korea","C. 오늘 드신 수제 비프 도시락":"C. Today’s handmade beef lunchbox",
+ "D. 선호도":"D. Preferences","E. 구매 의향":"E. Buying intention","F. 자유롭게":"F. Anything else",
+ "한국에서 무슨 일을 하세요?":"What do you do in Korea?",
+ "유학생":"Student","어학연수":"Language course","학부":"Undergraduate","대학원(석·박사)":"Graduate school (master’s/PhD)",
+ "현장 근무":"On-site work","공장·생산직(자동차부품·기계·금속 등)":"Factory/production (auto parts, machinery, metal, etc.)","조선소":"Shipyard",
+ "농업·축산":"Farming/livestock","어업·양식":"Fishing/aquaculture","건설 현장":"Construction site",
+ "그 밖 일":"Other work","식당·판매·서비스":"Restaurant/sales/service","사무·연구·IT·강사":"Office/research/IT/teaching","통역·무역":"Interpreting/trade",
+ "내 사업(가게·회사)":"My own business (shop/company)","일 안 함":"Not working","배우자·가족을 따라 한국에 옴":"Came to Korea with my spouse/family",
+ "할랄을 어느 정도 지키세요?":"How strictly do you keep halal?",
+ "할랄 인증 마크가 있는 것만 먹는다":"I only eat food with a halal certification mark",
+ "인증 마크가 없어도 무슬림이 만든 음식은 먹는다":"I eat food made by Muslims even without a mark",
+ "고기만 할랄로 먹고, 해산물·채소 음식은 일반 식당도 괜찮다":"Meat must be halal; seafood/vegetable dishes at regular restaurants are fine",
+ "돼지고기·술만 피한다":"I only avoid pork and alcohol","상황에 따라 다르다":"It depends","지키지 않는다":"I don’t keep halal",
+ "음식에서 피하는 것을 모두 골라 주세요":"Choose everything you avoid in food",
+ "돼지고기":"Pork","술":"Alcohol","할랄 방식으로 잡지 않은 소·닭고기":"Beef/chicken not slaughtered the halal way",
+ "돼지 성분이 든 가공식품(젤라틴·햄 등)":"Processed food with pork ingredients (gelatin, ham, etc.)",
+ "술이 들어간 소스·조미료(맛술 등)":"Sauces/seasonings with alcohol (cooking wine, etc.)",
+ "돼지고기와 같은 도구·기름으로 조리한 음식":"Food cooked with the same tools/oil as pork","피하는 것 없음":"Nothing",
+ "한국에서 할랄 음식을 사 먹을 때 불편했던 점을 자유롭게 적어 주세요.":"Tell us freely what has been inconvenient when buying halal food in Korea.",
+ "불편했던 것을 모두 골라 주세요":"Choose all the inconveniences you have had",
+ "믿을 수 있는 할랄 음식인지 알기 어렵다":"Hard to know if the food is truly halal","가까운 곳에 할랄 식당이 없다":"No halal restaurant nearby",
+ "배달·포장되는 곳이 없다":"No delivery or takeout","값이 비싸다":"Too expensive","맛·메뉴 종류가 적다":"Few tastes and menu options",
+ "점심시간 안에 사 먹기 어렵다":"Hard to get food within the lunch break","회사·학교 행사 자리에 먹을 게 없다":"Nothing to eat at work/school events","불편함 없음":"No inconvenience",
+ "지금 사는 곳 근처에서 할랄 음식을 사 먹기는 어떤가요?":"How easy is it to buy halal food near where you live?","1 매우 어렵다":"1 Very hard","5 매우 쉽다":"5 Very easy",
+ "평일 점심은 주로 어떻게 드세요?":"How do you usually eat lunch on weekdays?",
+ "집에서 싸 온다":"I bring food from home","회사·학교 식당에서 먹을 수 있는 것만 골라 먹는다":"I pick what I can eat at the work/school cafeteria",
+ "할랄 식당에서 사 먹는다":"I buy at a halal restaurant","일반 식당에서 고기 빼고 먹는다":"I eat at regular restaurants without meat","편의점·빵":"Convenience store/bread","거른다":"I skip lunch",
+ "학교·회사 행사, 워크숍, 회식에서 음식 때문에 못 드시고 넘어간 적 있나요?":"Have you missed eating at school/work events, workshops or team dinners because of the food?",
+ "자주":"Often","가끔":"Sometimes","거의 없다":"Rarely","그런 자리가 없었다":"I haven’t had such events",
+ "여행 가실 때 끼니는 어떻게 해결하세요?":"How do you handle meals when you travel?",
+ "할랄 식당을 미리 찾아본다":"I look up halal restaurants in advance","음식을 싸 간다":"I pack my own food","해산물·채식만 먹는다":"I eat only seafood/vegetarian",
+ "편의점":"Convenience store","먹을 곳 때문에 여행을 줄인다":"I travel less because of food",
+ "외식은 한 달에 몇 번 하세요?":"How many times a month do you eat out?",
+ "0번":"0 times","1~2번":"1–2 times","3~5번":"3–5 times","6번 이상":"6 or more times","1번":"Once","2~3번":"2–3 times","4~6번":"4–6 times","7~12번":"7–12 times","13번 이상(주 1번 넘게)":"13 or more (more than once a week)",
+ "외식하시면 주로 어디서 하세요?":"Where do you usually eat out?",
+ "할랄 식당":"Halal restaurant","다른 나라 음식점(인도·튀르키예 등)":"Foreign restaurants (Indian, Turkish, etc.)","일반 한식당에서 해산물·채식":"Seafood/vegetarian at Korean restaurants",
+ "패스트푸드":"Fast food","배달":"Delivery","모스크·친구 집 모임":"Gatherings at the mosque or friends’ homes","외식 안 함":"I don’t eat out",
+ "어떤 표시가 있으면 안심하고 드세요?":"What sign makes you feel safe to eat?",
+ "공식 인증 마크(KMF 등)":"Official certification mark (KMF, etc.)","무슬림 사장님 가게":"Muslim-owned shop","「할랄 재료 사용」 설명":"A note saying “halal ingredients used”",
+ "「돼지고기 안 씀」 표시":"A “no pork” sign","직접 물어보고 확인해야 안심":"I feel safe only after asking myself",
+ "맛은 어땠어요?":"How was the taste?","1 별로":"1 Not good","5 좋다":"5 Good",
+ "양은 어땠어요?":"How was the portion?","적다":"Small","적당하다":"Just right","많다":"Large",
+ "더 넣었으면 하는 것":"What would you like added?","밥 더":"More rice","고기 더":"More meat","채소·샐러드":"Vegetables/salad","소스 더":"More sauce",
+ "수프·국":"Soup","빵(난)":"Bread (naan)","디저트":"Dessert","음료":"Drink","매운맛 선택":"Spicy option",
+ "빼거나 바꿨으면 하는 것":"What would you remove or change?",
+ "식당에 가서 먹는다면, 먹고 싶은 도시락을 모두 체크해 주세요":"If you ate at a restaurant, select all the lunchboxes you’d like to eat",
+ "한국 안에서 여행 가서 먹는다면, 먹고 싶은 도시락을 모두 체크해 주세요":"If you were traveling within Korea, select all the lunchboxes you’d like to eat",
+ "외식할 때 가장 중요한 것 2개":"The 2 most important things when eating out",
+ "할랄 인증":"Halal certification","맛":"Taste","가격":"Price","양":"Portion","가까운 거리":"Close distance","위생·청결":"Hygiene/cleanliness","분위기":"Atmosphere","리뷰·평점":"Reviews/ratings",
+ "오늘 드신 도시락을 사 먹을 수 있다면 사시겠어요?":"If you could buy today’s lunchbox, would you?",
+ "꼭 산다":"Definitely","아마 산다":"Probably","모르겠다":"Not sure","아마 안 산다":"Probably not","절대 안 산다":"Definitely not",
+ "회사·학교에서 점심 도시락을 정기적으로 구매한다면 드시겠어요?":"If your company or school bought lunchboxes regularly, would you eat them?",
+ "매일":"Every day","주 2~3번":"2–3 times a week","안 먹는다":"No",
+ "언제 주문하시겠어요?":"When would you order?","평일 점심":"Weekday lunch","평일 저녁":"Weekday dinner","주말":"Weekend","모임·행사":"Gatherings/events",
+ "예배 뒤":"After prayer","여행·나들이":"Trips/outings","주문하지 않을 것 같다":"I probably wouldn’t order",
+ "3개월에 몇 번 정도 시키실 것 같아요?":"About how many times would you order in 3 months?",
+ "회사·학교·모임에서 음식 주문을 정하는 분이 본인이거나, 그런 분을 아세요?":"Do you decide food orders at your company, school or group, or do you know someone who does?",
+ "내가 정한다":"I decide","아는 분 있다":"I know someone","없다":"No",
+ "모스크에서 다 같이 식사할 때(금요예배 뒤·행사·이프타르) 음식은 주로 어떻게 준비하나요?":"When people eat together at the mosque (after Friday prayer, events, iftar), how is the food usually prepared?",
+ "신자들이 직접 요리한다":"Members cook it themselves","할랄 식당에 주문한다":"We order from a halal restaurant","각자 싸 온다":"Everyone brings their own",
+ "다 같이 식사하는 일이 거의 없다":"We rarely eat together","잘 모르겠다":"Not sure",
+ "함께 도시락을 알려 주실 분을 찾아요":"We’re looking for people to help spread the word",
+ "회사·학교·모임·친구에게 데일리할랄 도시락을 소개해 주시고 그 소개로 주문이 들어오면, 도시락 1개당 1,000원을 드려요. (예: 30개 주문 → 30,000원)":"Introduce Daily Halal lunchboxes to your company, school, group or friends. When an order comes in through you, we pay you 1,000 KRW per lunchbox. (e.g. 30 lunchboxes → 30,000 KRW)",
+ "다음에 기회가 되면 해보겠다":"I’d like to try it when there’s a chance","아니다":"No",
+ "이 도시락에 꼭 있었으면 하는 음식이나 바라는 점":"Food you’d like in this lunchbox, or other wishes",
+ "(선택) 사전 주문·다음 시식회 소식을 받을 연락처와 소속":"(Optional) Your contact and organization for pre-orders and news of the next tasting",
+ "비프 도시락":"Beef lunchbox","비프 케밥 세트":"Beef kebab set","비프 라이스보울":"Beef rice bowl","비프 스낵팩":"Beef snack pack",
+ "한식 덮밥 도시락":"Korean rice-bowl lunchbox","스테이크 도시락":"Steak lunchbox","서양식 박스 도시락":"Western box lunch","한식 도시락 A":"Korean lunchbox A",
+ "2단 세트 도시락":"Two-tier lunchbox set","샌드위치·파스타 도시락":"Sandwich & pasta lunchbox","볶음밥·케밥 도시락":"Fried rice & kebab lunchbox","채식 도시락":"Vegetarian lunchbox",
+ "칠기 정찬 도시락":"Lacquer-box full-course lunch","한식 도시락 B":"Korean lunchbox B","소갈비찜 정식 도시락":"Braised beef short rib lunchbox","함박스테이크 도시락":"Hamburg steak lunchbox"
+},uz:{
+ "데일리할랄":"Daily Halal",
+ "Daily Halal · 할랄 도시락 투표":"Daily Halal · Halol tushlik so‘rovnomasi",
+ "안녕하세요, 데일리할랄입니다.":"Assalomu alaykum, biz Daily Halalmiz.",
+ "경남에서 <b>할랄인증 사용한 소고기와 닭고기로 만든 도시락</b>을 준비하고 있어요.":"Gyeongnamda <b>halol sertifikatli mol va tovuq go‘shtidan tushliklar</b> tayyorlayapmiz.",
+ "오늘 드신 도시락과, 한국에서 평소 어떻게 식사하시는지 들려주세요.":"Bugungi tushlik va Koreyada odatda qanday ovqatlanishingiz haqida aytib bering.",
+ "이름은 받지 않습니다. 5분이면 끝나요. 좋은 말보다 솔직한 말이 더 큰 도움이 됩니다.":"Ismingiz so‘ralmaydi. Taxminan 5 daqiqa vaqt oladi. Yoqimli javobdan ko‘ra rost javob ko‘proq yordam beradi.",
+ "보내기":"Yuborish","보내는 중…":"Yuborilmoqda…","고맙습니다!":"Rahmat!",
+ "보내 주신 답은 할랄 도시락을 만드는 데 그대로 쓰겠습니다.":"Javoblaringiz halol tushlik tayyorlashda to‘g‘ridan-to‘g‘ri ishlatiladi.",
+ "몇 문항만이라도 답해 주세요":"Iltimos, hech bo‘lmasa bir nechta savolga javob bering",
+ "연락처를 남기시려면 동의에 체크해 주세요":"Aloqa ma’lumotini qoldirish uchun roziligingizni belgilang",
+ "보내지 못했어요. 잠시 뒤 다시 눌러 주세요":"Yuborib bo‘lmadi. Birozdan keyin qayta bosing",
+ "2개까지 고를 수 있어요":"Ko‘pi bilan 2 tasini tanlash mumkin","{n}개 체크했어요":"{n} ta tanlandi",
+ "자유롭게 적어 주세요":"Erkin yozing","직접 적어 주세요":"O‘zingiz yozing","그 밖":"Boshqa","그 밖(직접 쓰기)":"Boshqa (o‘zim yozaman)",
+ "전화번호 또는 메일":"Telefon yoki e-mail","소속(회사·학교·모임)":"Tashkilot (kompaniya, o‘qish joyi, jamoa)",
+ "연락처를 이 용도로만 쓰는 데 동의합니다":"Aloqa ma’lumotim faqat shu maqsadda ishlatilishiga roziman",
+ "하나만 골라 주세요":"Bittasini tanlang","여러 개 고르셔도 됩니다":"Bir nechtasini tanlash mumkin",
+ "없으면 「없음」이라고 적어 주세요":"Bo‘lmasa, “yo‘q” deb yozing","별로였으면 1점 주셔도 됩니다":"Yoqmagan bo‘lsa, 1 ball bering",
+ "사진을 누르면 체크됩니다 · 여러 개 고르셔도 됩니다":"Rasmni bosing — belgilanadi · bir nechtasini tanlash mumkin","안 적으셔도 됩니다":"Ixtiyoriy",
+ "A. 어떤 분인가요":"A. O‘zingiz haqingizda","B. 한국에서의 식사":"B. Koreyada ovqatlanish","C. 오늘 드신 수제 비프 도시락":"C. Bugungi qo‘lda tayyorlangan mol go‘shtli tushlik",
+ "D. 선호도":"D. Afzalliklar","E. 구매 의향":"E. Sotib olish niyati","F. 자유롭게":"F. Erkin fikr",
+ "한국에서 무슨 일을 하세요?":"Koreyada nima ish qilasiz?",
+ "유학생":"Talaba","어학연수":"Til kursi","학부":"Bakalavriat","대학원(석·박사)":"Magistratura/doktorantura",
+ "현장 근무":"Ishlab chiqarishda ishlayman","공장·생산직(자동차부품·기계·금속 등)":"Zavod/ishlab chiqarish (avto ehtiyot qismlar, mashinasozlik, metall va h.k.)","조선소":"Kemasozlik zavodi",
+ "농업·축산":"Dehqonchilik/chorvachilik","어업·양식":"Baliqchilik/baliq yetishtirish","건설 현장":"Qurilish",
+ "그 밖 일":"Boshqa ish","식당·판매·서비스":"Restoran/savdo/xizmat ko‘rsatish","사무·연구·IT·강사":"Ofis/ilmiy ish/IT/o‘qituvchi","통역·무역":"Tarjimonlik/tashqi savdo",
+ "내 사업(가게·회사)":"O‘z biznesim (do‘kon/kompaniya)","일 안 함":"Ishlamayman","배우자·가족을 따라 한국에 옴":"Turmush o‘rtog‘im yoki oilam bilan Koreyaga kelganman",
+ "할랄을 어느 정도 지키세요?":"Halolga qanchalik amal qilasiz?",
+ "할랄 인증 마크가 있는 것만 먹는다":"Faqat halol sertifikat belgisi bor ovqatni yeyman",
+ "인증 마크가 없어도 무슬림이 만든 음식은 먹는다":"Belgisi bo‘lmasa ham musulmon tayyorlagan ovqatni yeyman",
+ "고기만 할랄로 먹고, 해산물·채소 음식은 일반 식당도 괜찮다":"Faqat go‘sht halol bo‘lsin; dengiz mahsulotlari va sabzavotli ovqatni oddiy restoranda ham yeyman",
+ "돼지고기·술만 피한다":"Faqat cho‘chqa go‘shti va spirtli ichimlikdan saqlanaman","상황에 따라 다르다":"Vaziyatga qarab","지키지 않는다":"Amal qilmayman",
+ "음식에서 피하는 것을 모두 골라 주세요":"Ovqatda nimalardan saqlanasiz? Barchasini tanlang",
+ "돼지고기":"Cho‘chqa go‘shti","술":"Spirtli ichimlik","할랄 방식으로 잡지 않은 소·닭고기":"Halol usulda so‘yilmagan mol/tovuq go‘shti",
+ "돼지 성분이 든 가공식품(젤라틴·햄 등)":"Cho‘chqa tarkibli mahsulotlar (jelatin, kolbasa va h.k.)",
+ "술이 들어간 소스·조미료(맛술 등)":"Spirt qo‘shilgan sous va ziravorlar (oshxona vinosi va h.k.)",
+ "돼지고기와 같은 도구·기름으로 조리한 음식":"Cho‘chqa go‘shti bilan bir xil idish yoki yog‘da pishirilgan ovqat","피하는 것 없음":"Hech narsadan saqlanmayman",
+ "한국에서 할랄 음식을 사 먹을 때 불편했던 점을 자유롭게 적어 주세요.":"Koreyada halol ovqat sotib olishda qanday noqulayliklar bo‘lgan? Erkin yozing.",
+ "불편했던 것을 모두 골라 주세요":"Barcha noqulayliklarni tanlang",
+ "믿을 수 있는 할랄 음식인지 알기 어렵다":"Ovqat haqiqatan halolligini bilish qiyin","가까운 곳에 할랄 식당이 없다":"Yaqin atrofda halol restoran yo‘q",
+ "배달·포장되는 곳이 없다":"Yetkazib berish yoki olib ketish imkoni yo‘q","값이 비싸다":"Narxi qimmat","맛·메뉴 종류가 적다":"Ta’m va menyu tanlovi kam",
+ "점심시간 안에 사 먹기 어렵다":"Tushlik tanaffusida ovqat topish qiyin","회사·학교 행사 자리에 먹을 게 없다":"Ish yoki o‘qish joyidagi tadbirlarda yeydigan narsa yo‘q","불편함 없음":"Noqulaylik yo‘q",
+ "지금 사는 곳 근처에서 할랄 음식을 사 먹기는 어떤가요?":"Yashash joyingiz yaqinida halol ovqat sotib olish qanchalik oson?","1 매우 어렵다":"1 Juda qiyin","5 매우 쉽다":"5 Juda oson",
+ "평일 점심은 주로 어떻게 드세요?":"Ish kunlari tushlikni odatda qanday qilasiz?",
+ "집에서 싸 온다":"Uydan olib kelaman","회사·학교 식당에서 먹을 수 있는 것만 골라 먹는다":"Ish/o‘qish joyi oshxonasida yeyish mumkin bo‘lganini tanlab yeyman",
+ "할랄 식당에서 사 먹는다":"Halol restorandan sotib olaman","일반 식당에서 고기 빼고 먹는다":"Oddiy restoranda go‘shtsiz yeyman","편의점·빵":"Kichik do‘kon (pyeonuijeom)/non","거른다":"Tushlik qilmayman",
+ "학교·회사 행사, 워크숍, 회식에서 음식 때문에 못 드시고 넘어간 적 있나요?":"O‘qish yoki ish tadbirlari, seminar va jamoaviy ovqatlarda ovqat sababli yemay qolgan paytlaringiz bo‘lganmi?",
+ "자주":"Tez-tez","가끔":"Ba’zan","거의 없다":"Deyarli yo‘q","그런 자리가 없었다":"Bunday tadbirlar bo‘lmagan",
+ "여행 가실 때 끼니는 어떻게 해결하세요?":"Sayohatda ovqatni qanday hal qilasiz?",
+ "할랄 식당을 미리 찾아본다":"Halol restoranlarni oldindan qidiraman","음식을 싸 간다":"Ovqatni o‘zim olib boraman","해산물·채식만 먹는다":"Faqat dengiz mahsulotlari yoki vegetarian ovqat yeyman",
+ "편의점":"Kichik do‘kon (pyeonuijeom)","먹을 곳 때문에 여행을 줄인다":"Ovqat sababli kamroq sayohat qilaman",
+ "외식은 한 달에 몇 번 하세요?":"Oyiga necha marta tashqarida ovqatlanasiz?",
+ "0번":"0 marta","1~2번":"1–2 marta","3~5번":"3–5 marta","6번 이상":"6 martadan ko‘p","1번":"1 marta","2~3번":"2–3 marta","4~6번":"4–6 marta","7~12번":"7–12 marta","13번 이상(주 1번 넘게)":"13 va undan ko‘p (haftasiga 1 martadan ko‘p)",
+ "외식하시면 주로 어디서 하세요?":"Tashqarida odatda qayerda ovqatlanasiz?",
+ "할랄 식당":"Halol restoran","다른 나라 음식점(인도·튀르키예 등)":"Xorijiy restoranlar (hind, turk va h.k.)","일반 한식당에서 해산물·채식":"Koreys restoranida dengiz mahsulotlari/vegetarian ovqat",
+ "패스트푸드":"Fast-fud","배달":"Yetkazib berish","모스크·친구 집 모임":"Masjid yoki do‘stlar uyidagi yig‘inlar","외식 안 함":"Tashqarida ovqatlanmayman",
+ "어떤 표시가 있으면 안심하고 드세요?":"Qanday belgi bo‘lsa xotirjam yeysiz?",
+ "공식 인증 마크(KMF 등)":"Rasmiy sertifikat belgisi (KMF va h.k.)","무슬림 사장님 가게":"Egasi musulmon bo‘lgan do‘kon","「할랄 재료 사용」 설명":"“Halol mahsulotlar ishlatilgan” degan yozuv",
+ "「돼지고기 안 씀」 표시":"“Cho‘chqa go‘shti ishlatilmaydi” belgisi","직접 물어보고 확인해야 안심":"Faqat o‘zim so‘rab bilsam xotirjam bo‘laman",
+ "맛은 어땠어요?":"Ta’mi qanday edi?","1 별로":"1 Yoqmadi","5 좋다":"5 Juda yaxshi",
+ "양은 어땠어요?":"Miqdori qanday edi?","적다":"Kam","적당하다":"Yetarli","많다":"Ko‘p",
+ "더 넣었으면 하는 것":"Nimani qo‘shishni xohlaysiz?","밥 더":"Ko‘proq guruch","고기 더":"Ko‘proq go‘sht","채소·샐러드":"Sabzavot/salat","소스 더":"Ko‘proq sous",
+ "수프·국":"Sho‘rva","빵(난)":"Non","디저트":"Shirinlik","음료":"Ichimlik","매운맛 선택":"Achchiq variant",
+ "빼거나 바꿨으면 하는 것":"Nimani olib tashlash yoki o‘zgartirishni xohlaysiz?",
+ "식당에 가서 먹는다면, 먹고 싶은 도시락을 모두 체크해 주세요":"Restoranda ovqatlansangiz, yegingiz keladigan barcha tushliklarni belgilang",
+ "한국 안에서 여행 가서 먹는다면, 먹고 싶은 도시락을 모두 체크해 주세요":"Koreya bo‘ylab sayohatda yegingiz keladigan barcha tushliklarni belgilang",
+ "외식할 때 가장 중요한 것 2개":"Tashqarida ovqatlanganda eng muhim 2 narsa",
+ "할랄 인증":"Halol sertifikat","맛":"Ta’m","가격":"Narx","양":"Miqdor","가까운 거리":"Yaqinligi","위생·청결":"Gigiyena/tozalik","분위기":"Muhit","리뷰·평점":"Sharhlar/reyting",
+ "오늘 드신 도시락을 사 먹을 수 있다면 사시겠어요?":"Bugungi tushlikni sotib olish imkoni bo‘lsa, olarmidingiz?",
+ "꼭 산다":"Albatta olaman","아마 산다":"Ehtimol olaman","모르겠다":"Bilmayman","아마 안 산다":"Ehtimol olmayman","절대 안 산다":"Aslo olmayman",
+ "회사·학교에서 점심 도시락을 정기적으로 구매한다면 드시겠어요?":"Ish yoki o‘qish joyingiz tushlikni muntazam buyurtma qilsa, yeyarmidingiz?",
+ "매일":"Har kuni","주 2~3번":"Haftasiga 2–3 marta","안 먹는다":"Yemayman",
+ "언제 주문하시겠어요?":"Qachon buyurtma berardingiz?","평일 점심":"Ish kuni tushlik","평일 저녁":"Ish kuni kechki ovqat","주말":"Dam olish kunlari","모임·행사":"Yig‘in va tadbirlar",
+ "예배 뒤":"Namozdan keyin","여행·나들이":"Sayohat va sayr","주문하지 않을 것 같다":"Buyurtma bermasam kerak",
+ "3개월에 몇 번 정도 시키실 것 같아요?":"3 oyda taxminan necha marta buyurtma berardingiz?",
+ "회사·학교·모임에서 음식 주문을 정하는 분이 본인이거나, 그런 분을 아세요?":"Ish joyingiz, o‘qish joyingiz yoki jamoangizda ovqat buyurtmasini o‘zingiz hal qilasizmi yoki shunday odamni bilasizmi?",
+ "내가 정한다":"O‘zim hal qilaman","아는 분 있다":"Shunday odamni bilaman","없다":"Yo‘q",
+ "모스크에서 다 같이 식사할 때(금요예배 뒤·행사·이프타르) 음식은 주로 어떻게 준비하나요?":"Masjidda birga ovqatlanganda (juma namozidan keyin, tadbirlar, iftor) ovqat odatda qanday tayyorlanadi?",
+ "신자들이 직접 요리한다":"Jamoat a’zolari o‘zlari pishiradi","할랄 식당에 주문한다":"Halol restorandan buyurtma qilinadi","각자 싸 온다":"Har kim o‘zi olib keladi",
+ "다 같이 식사하는 일이 거의 없다":"Birga kam ovqatlanamiz","잘 모르겠다":"Bilmayman",
+ "함께 도시락을 알려 주실 분을 찾아요":"Tushligimizni tanishtirishga yordam beradiganlarni izlayapmiz",
+ "회사·학교·모임·친구에게 데일리할랄 도시락을 소개해 주시고 그 소개로 주문이 들어오면, 도시락 1개당 1,000원을 드려요. (예: 30개 주문 → 30,000원)":"Daily Halal tushliklarini ish joyingiz, o‘qish joyingiz, jamoangiz yoki do‘stlaringizga tanishtiring. Siz orqali buyurtma kelsa, har bir tushlik uchun 1,000 von beramiz. (Masalan: 30 ta buyurtma → 30,000 von)",
+ "다음에 기회가 되면 해보겠다":"Imkoniyat bo‘lsa, sinab ko‘raman","아니다":"Yo‘q",
+ "이 도시락에 꼭 있었으면 하는 음식이나 바라는 점":"Bu tushlikda bo‘lishini xohlagan ovqat yoki istaklaringiz",
+ "(선택) 사전 주문·다음 시식회 소식을 받을 연락처와 소속":"(Ixtiyoriy) Oldindan buyurtma va keyingi tatib ko‘rish tadbiri xabarlari uchun aloqa ma’lumoti va tashkilotingiz",
+ "비프 도시락":"Mol go‘shtli tushlik","비프 케밥 세트":"Mol go‘shtli kabob to‘plami","비프 라이스보울":"Mol go‘shtli guruch kosasi","비프 스낵팩":"Mol go‘shtli gazak to‘plami",
+ "한식 덮밥 도시락":"Koreyscha guruchli tushlik","스테이크 도시락":"Steyk tushlik","서양식 박스 도시락":"G‘arbcha quti tushlik","한식 도시락 A":"Koreyscha tushlik A",
+ "2단 세트 도시락":"Ikki qavatli tushlik to‘plami","샌드위치·파스타 도시락":"Sendvich va pasta tushlik","볶음밥·케밥 도시락":"Qovurilgan guruch va kabob tushlik","채식 도시락":"Vegetarian tushlik",
+ "칠기 정찬 도시락":"Lak qutidagi to‘liq tushlik","한식 도시락 B":"Koreyscha tushlik B","소갈비찜 정식 도시락":"Dimlangan mol qovurg‘asi tushligi","함박스테이크 도시락":"Gamburg steyk tushlik"
+}};
+
 var A = {}, ANSWERABLE = Q.filter(function(q){return q.id;}).length;
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
+/* 11-05 3개 언어(한·영·우즈벡) — 화면 글자만 바꾸고, 시트에 쌓이는 답은 항상 한국어 값 그대로 + lang 칸 */
+var LANG = "ko";
+function tr(s){ var d = I18N[LANG]; return (d && d[s]) || s; }
+var PHOTO_ORDER = {};
 function optHTML(q, v, kind){
-  return '<label><input type="'+kind+'" name="'+q.id+'" value="'+esc(v)+'"><span>'+esc(v)+'</span></label>';
+  return '<label><input type="'+kind+'" name="'+q.id+'" value="'+esc(v)+'"><span>'+esc(tr(v))+'</span></label>';
 }
 function render(){
   var h = [], n = 0, open = false;
@@ -161,47 +353,87 @@ function render(){
     if(q.sec){
       if(open) h.push('</section>');
       n++; open = true;
-      h.push('<section><div class="eyebrow"><span class="n">'+n+'</span><h2>'+esc(q.sec.replace(/^[A-Z]\.\s*/,""))+'</h2></div>');
+      h.push('<section><div class="eyebrow"><span class="n">'+n+'</span><h2>'+esc(tr(q.sec).replace(/^[A-Z]\.\s*/,""))+'</h2></div>');
       return;
     }
-    h.push('<div class="q" data-q="'+q.id+'"><p class="qt">'+esc(q.t)+(q.hint?' <span class="opt">· '+esc(q.hint)+'</span>':'')+'</p>');
+    h.push('<div class="q" data-q="'+q.id+'"><p class="qt">'+esc(tr(q.t))+(q.hint?' <span class="opt">· '+esc(tr(q.hint))+'</span>':'')+'</p>');
+    if(q.desc) h.push('<p class="qd">'+esc(tr(q.desc))+'</p>');
     if(q.type==="radio"||q.type==="check"){
       var kind = q.type==="radio"?"radio":"checkbox";
       if(q.groups){
-        q.groups.forEach(function(g){h.push('<div class="grp">'+esc(g[0])+'</div><div class="choices">');g[1].forEach(function(v){h.push(optHTML(q,v,kind));});h.push('</div>');});
-        if(q.other) h.push('<div class="grp">그 밖</div><div class="choices">'+optHTML(q,"그 밖(직접 쓰기)",kind)+'</div>');
+        q.groups.forEach(function(g){h.push('<div class="grp">'+esc(tr(g[0]))+'</div><div class="choices">');g[1].forEach(function(v){h.push(optHTML(q,v,kind));});h.push('</div>');});
+        if(q.other) h.push('<div class="grp">'+esc(tr("그 밖"))+'</div><div class="choices">'+optHTML(q,"그 밖(직접 쓰기)",kind)+'</div>');
       }else{
         h.push('<div class="choices">');q.o.forEach(function(v){h.push(optHTML(q,v,kind));});
         if(q.other) h.push(optHTML(q,"그 밖(직접 쓰기)",kind));
         h.push('</div>');
       }
-      if(q.other) h.push('<input type="text" class="other" data-other="'+q.id+'" placeholder="직접 적어 주세요" hidden>');
+      if(q.other) h.push('<input type="text" class="other" data-other="'+q.id+'" placeholder="'+esc(tr("직접 적어 주세요"))+'" hidden>');
     }else if(q.type==="scale"){
       h.push('<div class="sw"><div class="scale">');
       for(var i=1;i<=5;i++) h.push('<label><input type="radio" name="'+q.id+'" value="'+i+'"><span>'+i+'</span></label>');
-      h.push('</div><div class="scalekey"><span>'+esc(q.ends[0])+'</span><span>'+esc(q.ends[1])+'</span></div></div>');
+      h.push('</div><div class="scalekey"><span>'+esc(tr(q.ends[0]))+'</span><span>'+esc(tr(q.ends[1]))+'</span></div></div>');
     }else if(q.type==="text"){
-      h.push('<textarea name="'+q.id+'" placeholder="자유롭게 적어 주세요"></textarea>');
+      h.push('<textarea name="'+q.id+'" placeholder="'+esc(tr("자유롭게 적어 주세요"))+'"></textarea>');
     }else if(q.type==="photo"){
       h.push('<div class="photos">');
-      shuffle(PHOTOS).forEach(function(p){
-        h.push('<button type="button" class="ph" data-photo="'+q.id+'" data-v="'+esc(p.label)+'"><img src="'+p.img+'" alt="'+esc(p.label)+'" loading="lazy"><div class="ck"></div><span>'+esc(p.label)+'</span></button>');
+      if(!PHOTO_ORDER[q.id]) PHOTO_ORDER[q.id] = shuffle(PHOTOS);
+      PHOTO_ORDER[q.id].forEach(function(p){
+        h.push('<button type="button" class="ph" data-photo="'+q.id+'" data-v="'+esc(p.label)+'"><img src="'+p.img+'" alt="'+esc(tr(p.label))+'" loading="lazy"><div class="ck"></div><span>'+esc(tr(p.label))+'</span></button>');
       });
       h.push('</div><div class="cnt" data-cnt="'+q.id+'"></div>');
     }else if(q.type==="contact"){
-      h.push('<input type="text" name="contact" placeholder="전화번호 또는 메일">');
-      h.push('<input type="text" name="org" class="other" placeholder="소속(회사·학교·모임)">');
-      h.push('<label class="consent"><input type="checkbox" name="consent" value="동의"><span>연락처를 이 용도로만 쓰는 데 동의합니다</span></label>');
-      h.push('<label class="consent"><input type="checkbox" name="refer" value="소개 가능"><span>회사·학교·친구에게 이 도시락을 소개해 줄 수 있어요 (소개로 주문되면 도시락 1개당 1,000원을 드려요)</span></label>');
+      h.push('<input type="text" name="contact" placeholder="'+esc(tr("전화번호 또는 메일"))+'">');
+      h.push('<input type="text" name="org" class="other" placeholder="'+esc(tr("소속(회사·학교·모임)"))+'">');
+      h.push('<label class="consent"><input type="checkbox" name="consent" value="동의"><span>'+esc(tr("연락처를 이 용도로만 쓰는 데 동의합니다"))+'</span></label>');
     }
     h.push('</div>');
   });
   if(open) h.push('</section>');
   document.getElementById("qs").innerHTML = h.join("");
 }
-render();
+/* 언어 바꿔도 이미 고른 답·적은 글은 그대로 되살린다 */
+function restore(saved){
+  Object.keys(saved.vals).forEach(function(k){
+    var el = qs.querySelector('[name="'+k+'"]:not([type=radio]):not([type=checkbox])');
+    if(el) el.value = saved.vals[k];
+  });
+  saved.checked.forEach(function(c){
+    var el = [].filter.call(qs.querySelectorAll('input[name="'+c[0]+'"]'), function(i){return i.value===c[1];})[0];
+    if(el) el.checked = true;
+  });
+  saved.photos.forEach(function(p){
+    var b = [].filter.call(qs.querySelectorAll('.ph[data-photo="'+p[0]+'"]'), function(x){return x.dataset.v===p[1];})[0];
+    if(b) b.classList.add("on");
+  });
+  [].forEach.call(qs.querySelectorAll('[data-other]'), function(box){ if(saved.others[box.dataset.other]!==undefined) box.value = saved.others[box.dataset.other]; });
+}
+function snapshot(){
+  var s = {vals:{}, checked:[], photos:[], others:{}};
+  if(!qs) return s;
+  [].forEach.call(qs.querySelectorAll('textarea,input[type=text]:not([data-other])'), function(e){ if(e.value) s.vals[e.name]=e.value; });
+  [].forEach.call(qs.querySelectorAll('input:checked'), function(e){ s.checked.push([e.name,e.value]); });
+  [].forEach.call(qs.querySelectorAll('.ph.on'), function(b){ s.photos.push([b.dataset.photo,b.dataset.v]); });
+  [].forEach.call(qs.querySelectorAll('[data-other]'), function(b){ if(b.value) s.others[b.dataset.other]=b.value; });
+  return s;
+}
+function setLang(l){
+  var saved = snapshot();
+  LANG = I18N[l] || l==="ko" ? l : "ko";
+  document.documentElement.lang = LANG;
+  [].forEach.call(document.querySelectorAll("[data-t]"), function(el){
+    if(!el.dataset.ko) el.dataset.ko = el.innerHTML;
+    el.innerHTML = LANG==="ko" ? el.dataset.ko : tr(el.dataset.ko);
+  });
+  [].forEach.call(document.querySelectorAll("#langs button"), function(b){ b.classList.toggle("on", b.dataset.lang===LANG); });
+  render(); restore(saved); collect();
+}
+var qs = null;
+document.getElementById("langs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-lang]"); if(b) setLang(b.dataset.lang);
+});
 
-var qs = document.getElementById("qs");
+qs = document.getElementById("qs");
 qs.addEventListener("click", function(e){
   var b = e.target.closest(".ph"); if(!b) return;
   b.classList.toggle("on"); collect();
@@ -210,7 +442,7 @@ qs.addEventListener("change", function(e){
   var el = e.target, q = Q.filter(function(x){return x.id===el.name;})[0];
   if(q && q.max && el.checked){
     var on = qs.querySelectorAll('input[name="'+el.name+'"]:checked');
-    if(on.length>q.max){el.checked=false;flash("2개까지 고를 수 있어요");}
+    if(on.length>q.max){el.checked=false;flash(tr("2개까지 고를 수 있어요"));}
   }
   collect();
 });
@@ -225,12 +457,11 @@ function collect(){
     if(q.type==="photo"){
       var v = [].map.call(qs.querySelectorAll('.ph.on[data-photo="'+q.id+'"]'), function(b){return b.dataset.v;});
       if(v.length) A[q.id]=v;
-      qs.querySelector('[data-cnt="'+q.id+'"]').textContent = v.length? v.length+"개 체크했어요" : "";
+      qs.querySelector('[data-cnt="'+q.id+'"]').textContent = v.length? tr("{n}개 체크했어요").replace("{n}", v.length) : "";
     }else if(q.type==="contact"){
       var c = qs.querySelector('[name=contact]').value.trim(), o = qs.querySelector('[name=org]').value.trim();
       if(c) A.contact=c; if(o) A.org=o;
       if(qs.querySelector('[name=consent]').checked) A.consent="동의";
-      if(qs.querySelector('[name=refer]').checked) A.refer="소개 가능";
     }else if(q.type==="text"){
       var t = qs.querySelector('[name="'+q.id+'"]').value.trim(); if(t) A[q.id]=t;
     }else{
@@ -249,16 +480,20 @@ function collect(){
 
 document.getElementById("send").addEventListener("click", function(){
   collect();
-  if(Object.keys(A).length < 3){ flash("몇 문항만이라도 답해 주세요"); return; }
-  if(A.contact && !A.consent){ flash("연락처를 남기시려면 동의에 체크해 주세요"); return; }
-  var btn = this; btn.disabled = true; btn.textContent = "보내는 중…";
+  if(Object.keys(A).length < 3){ flash(tr("몇 문항만이라도 답해 주세요")); return; }
+  if(A.contact && !A.consent){ flash(tr("연락처를 남기시려면 동의에 체크해 주세요")); return; }
+  var btn = this; btn.disabled = true; btn.textContent = tr("보내는 중…");
+  A.lang = LANG;
   var payload = {submitted_at: new Date().toISOString(), answers: A, ua: navigator.userAgent.slice(0,120)};
   function done(){ document.getElementById("form").hidden = true; document.getElementById("done").hidden = false; window.scrollTo(0,0); }
-  function fail(){ btn.disabled = false; btn.textContent = "보내기"; flash("보내지 못했어요. 잠시 뒤 다시 눌러 주세요"); }
+  function fail(){ btn.disabled = false; btn.textContent = tr("보내기"); flash(tr("보내지 못했어요. 잠시 뒤 다시 눌러 주세요")); }
   if(!SUBMIT_ENDPOINT){ console.log("[preview]", JSON.stringify(payload)); done(); return; }
   fetch(SUBMIT_ENDPOINT, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload)})
     .then(function(r){return r.json();}).then(function(j){ j && j.ok ? done() : fail(); }).catch(fail);
 });
+
+/* 첫 언어 = 주소 ?lang=en|uz 가 있으면 그것, 없으면 한국어 */
+(function(){ var m = /[?&]lang=(ko|en|uz)/.exec(location.search); setLang(m ? m[1] : "ko"); })();
 </script>
 </body>
 </html>
