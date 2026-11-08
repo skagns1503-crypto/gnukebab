@@ -111,7 +111,7 @@ var NONE = "여기에 없다";
 var Q = [
  {no:"1", id:"regular", t:"할랄 도시락이 정기적으로 필요하신가요?", type:"radio", o:["매주","매달","분기마다","행사 때만","지금은 없음"]},
  {no:"2", id:"quantity", t:"한 번에 몇 개 정도 예상하시나요?", type:"radio", o:["10개 미만","10~29개","30~49개","50~99개","100개 이상"]},
- {no:"3", id:"price", t:"1인당 희망하시는 금액대는 어느 정도인가요?", type:"radio", o:["1만 원 미만","1만~1.5만 원","1.5만~2만 원","2만~3만 원","3만 원 이상"]},
+ {no:"3", id:"price", t:"1인당 희망하시는 금액대는 어느 정도인가요?", type:"radio", o:["1만~1.5만 원","1.5만~2만 원","2만~3만 원","3만~5만 원","5만 원 이상(프리미엄)"]},
  {no:"4", id:"products", t:"필요로 하시는 제품은 무엇인가요? (여러 개 선택)", hint:"사진을 누르면 체크됩니다", type:"photo", none:NONE, otherKey:"products_other"},
  {no:"5", id:"bought", t:"할랄 도시락을 구매하신 적이 있나요?", type:"radio", o:["있다","없다"]},
  {no:"5-1", id:"bought_pain", t:"구매하실 때 불편했던 점이 있었나요?", hint:"선택", type:"text", showIf:["bought","있다"]},
@@ -149,7 +149,7 @@ var I18N = {en:{
  "한 번에 몇 개 정도 예상하시나요?":"About how many would you order at one time?",
  "10개 미만":"Fewer than 10","10~29개":"10–29","30~49개":"30–49","50~99개":"50–99","100개 이상":"100 or more",
  "1인당 희망하시는 금액대는 어느 정도인가요?":"What price range per person do you have in mind?",
- "1만 원 미만":"Under KRW 10,000","1만~1.5만 원":"KRW 10,000–15,000","1.5만~2만 원":"KRW 15,000–20,000","2만~3만 원":"KRW 20,000–30,000","3만 원 이상":"KRW 30,000 or more",
+ "1만~1.5만 원":"KRW 10,000–15,000","1.5만~2만 원":"KRW 15,000–20,000","2만~3만 원":"KRW 20,000–30,000","3만~5만 원":"KRW 30,000–50,000","5만 원 이상(프리미엄)":"KRW 50,000 or more (premium)",
  "필요로 하시는 제품은 무엇인가요? (여러 개 선택)":"Which products do you need? (select all that apply)",
  "비프 도시락":"Beef lunch box","한식 덮밥 도시락":"Korean rice-bowl lunch box","소갈비찜 정식 도시락":"Braised beef short rib set lunch box","함박스테이크 도시락":"Hamburg steak lunch box",
  "여기에 없다":"None of these (write in)",
