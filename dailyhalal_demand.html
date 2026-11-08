@@ -125,7 +125,7 @@ var Q = [
 ];
 
 /* 11번 개인정보 수집 안내(화면 글자) */
-var PRIVACY = "<b>개인정보 수집·이용 안내</b>수집 항목: 기관명, 담당자, 연락처 · 수집 목적: 수요 확인, 사업 계획과 지원사업 심사·발표 자료 작성, 오픈·시식회 소식 안내(12번에서 받겠다고 하신 경우) · 목적이 끝나면 삭제합니다. 적지 않으셔도 설문에 참여하실 수 있습니다.";
+var PRIVACY = "<b>개인정보 수집·이용 안내</b>수집 항목: 기관명, 담당자, 연락처 · 수집 목적: 수요 확인, 사업 계획과 지원사업 심사·발표 자료 작성, 오픈·시식회 소식 안내(12번에서 받겠다고 하신 경우) · 보유 기간: 수집일부터 3개월 보관 후 삭제합니다. 적지 않으셔도 설문에 참여하실 수 있습니다.";
 
 /* 영어 = 한국어 글자 → 영어. 원어민 검수 전(2026-11-08 내 번역) */
 var I18N = {en:{
@@ -169,7 +169,7 @@ var I18N = {en:{
  "오픈·시식회 소식을 위 연락처로 받으시겠어요?":"Would you like to receive news of the opening and tasting events at the contact above?",
  "받겠다":"Yes, please","받지 않겠다":"No, thank you"
 }};
-I18N.en[PRIVACY] = "<b>Notice on collection and use of personal information</b>Items collected: organization name, contact person, contact details · Purpose: confirming demand, preparing our business plan and support program review and presentation materials, and sending news of the opening and tasting events (only if you answer “Yes, please” to question 12) · We delete them once the purpose is fulfilled. You may take part in the survey without filling these in.";
+I18N.en[PRIVACY] = "<b>Notice on collection and use of personal information</b>Items collected: organization name, contact person, contact details · Purpose: confirming demand, preparing our business plan and support program review and presentation materials, and sending news of the opening and tasting events (only if you answer “Yes, please” to question 12) · Retention: we keep them for 3 months from the date of collection and then delete them. You may take part in the survey without filling these in.";
 
 var A = {};
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
