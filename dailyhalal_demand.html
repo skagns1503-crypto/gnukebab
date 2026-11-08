@@ -121,12 +121,11 @@ var Q = [
  {no:"9", id:"halal_level", t:"할랄은 어느 정도 필요하신가요?", type:"radio", o:["공식 인증이 꼭 필요","할랄 고기면 충분","상관없음"]},
  {no:"10", id:"delivery", t:"배달받으실 지역과 최소 주문 수량에 대해 알려 주세요", hint:"선택", type:"text"},
  {no:"11", id:"org", t:"기관(회사)명 · 담당자 · 연락처", type:"contact"},
- {no:"12", id:"consent_name", t:"지원사업 심사·발표 자료에 기관명을 써도 괜찮으신가요?", hint:"필수", req:true, type:"radio", o:["괜찮다","기관명 없이만 사용"]},
- {no:"13", id:"consent_contact", t:"오픈·시식회 소식을 위 연락처로 받으시겠어요?", hint:"필수", req:true, type:"radio", o:["받겠다","받지 않겠다"]}
+ {no:"12", id:"consent_contact", t:"오픈·시식회 소식을 위 연락처로 받으시겠어요?", hint:"필수", req:true, type:"radio", o:["받겠다","받지 않겠다"]}
 ];
 
 /* 11번 개인정보 수집 안내(화면 글자) */
-var PRIVACY = "<b>개인정보 수집·이용 안내</b>수집 항목: 기관명, 담당자, 연락처 · 수집 목적: 수요 확인, 사업 계획과 지원사업 심사·발표 자료 작성, 오픈·시식회 소식 안내(13번에서 받겠다고 하신 경우) · 목적이 끝나면 삭제합니다. 적지 않으셔도 설문에 참여하실 수 있습니다.";
+var PRIVACY = "<b>개인정보 수집·이용 안내</b>수집 항목: 기관명, 담당자, 연락처 · 수집 목적: 수요 확인, 사업 계획과 지원사업 심사·발표 자료 작성, 오픈·시식회 소식 안내(12번에서 받겠다고 하신 경우) · 목적이 끝나면 삭제합니다. 적지 않으셔도 설문에 참여하실 수 있습니다.";
 
 /* 영어 = 한국어 글자 → 영어. 원어민 검수 전(2026-11-08 내 번역) */
 var I18N = {en:{
@@ -139,7 +138,7 @@ var I18N = {en:{
  "11월 12일(목)까지 답해 주시면 큰 도움이 됩니다.":"We would appreciate your response by Thursday, November 12.",
  "보내기":"Submit","보내는 중…":"Sending…","고맙습니다!":"Thank you!",
  "보내 주신 답은 사업 계획과 지원사업 심사 자료에만 사용합니다.":"Your answers will be used only for our business plan and support program review materials.",
- "12번과 13번에 답해 주세요":"Please answer questions 12 and 13",
+ "12번에 답해 주세요":"Please answer question 12",
  "보내지 못했어요. 잠시 뒤 다시 눌러 주세요":"Could not send. Please try again in a moment",
  "{n}개 체크했어요":"{n} selected",
  "선택":"Optional","필수":"Required","사진을 누르면 체크됩니다":"Tap a photo to select",
@@ -167,12 +166,10 @@ var I18N = {en:{
  "공식 인증이 꼭 필요":"Official certification is required","할랄 고기면 충분":"Halal meat is enough","상관없음":"No preference",
  "배달받으실 지역과 최소 주문 수량에 대해 알려 주세요":"Please tell us the delivery area and the minimum order quantity you need",
  "기관(회사)명 · 담당자 · 연락처":"Organization (company) name · Contact person · Contact details",
- "지원사업 심사·발표 자료에 기관명을 써도 괜찮으신가요?":"May we use your organization’s name in support program review and presentation materials?",
- "괜찮다":"Yes, that is fine","기관명 없이만 사용":"Use only without the organization name",
  "오픈·시식회 소식을 위 연락처로 받으시겠어요?":"Would you like to receive news of the opening and tasting events at the contact above?",
  "받겠다":"Yes, please","받지 않겠다":"No, thank you"
 }};
-I18N.en[PRIVACY] = "<b>Notice on collection and use of personal information</b>Items collected: organization name, contact person, contact details · Purpose: confirming demand, preparing our business plan and support program review and presentation materials, and sending news of the opening and tasting events (only if you answer “Yes, please” to question 13) · We delete them once the purpose is fulfilled. You may take part in the survey without filling these in.";
+I18N.en[PRIVACY] = "<b>Notice on collection and use of personal information</b>Items collected: organization name, contact person, contact details · Purpose: confirming demand, preparing our business plan and support program review and presentation materials, and sending news of the opening and tasting events (only if you answer “Yes, please” to question 12) · We delete them once the purpose is fulfilled. You may take part in the survey without filling these in.";
 
 var A = {};
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
@@ -301,7 +298,7 @@ document.getElementById("send").addEventListener("click", function(){
   if(miss.length){
     miss.forEach(function(q){ qs.querySelector('[data-q="'+q.id+'"]').classList.add("err"); });
     qs.querySelector('[data-q="'+miss[0].id+'"]').scrollIntoView({behavior:"smooth",block:"center"});
-    flash(tr("12번과 13번에 답해 주세요")); return;
+    flash(tr("12번에 답해 주세요")); return;
   }
   var btn = this; btn.disabled = true; btn.textContent = tr("보내는 중…");
   A.lang = LANG;
