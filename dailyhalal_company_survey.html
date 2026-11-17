@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>데일리할랄 도시락 설문조사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 11-17 산단 업체 담당자 설문 — 틀·색은 데일리할랄 시식회 설문(MosqueTasting_261106/_tools/survey) 그대로. 한국어만, 사진·언어 버튼 없음 */
+:root{
+  --ground:#FFFFFF; --surface:#F5F9F7; --ink:#14201A; --muted:#76857E;
+  --line:#DFE7E3; --main:#0F7A4A; --main-deep:#0A5A36; --warn:#B3261E;
+  --display:"Black Han Sans","Noto Sans KR",sans-serif;
+  --body:"Noto Sans KR","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);line-height:1.65;-webkit-text-size-adjust:100%}
+.bar{position:sticky;top:0;height:3px;background:var(--line);z-index:20}
+.bar>i{display:block;height:100%;width:0;background:var(--main);transition:width .25s ease}
+header.mast{background:var(--main);color:#fff;text-align:center;padding:22px 16px 18px}
+header.mast .brand{font-family:var(--display);font-size:34px;line-height:1.1;letter-spacing:.02em}
+header.mast small{display:block;font-size:13px;opacity:.85;margin-top:4px}
+.wrap{max-width:620px;margin:0 auto;padding-inline:20px;padding-block:0 64px}
+.intro{padding-block:30px 8px}
+.intro h1{font-family:var(--display);font-size:clamp(25px,6.6vw,34px);line-height:1.28;margin:0 0 16px;text-wrap:balance;word-break:keep-all;font-weight:400}
+.intro p{margin:0 0 12px;font-size:15.5px;color:#33403A;word-break:keep-all}
+section{padding-block:30px;border-top:1px solid var(--line)}
+.eyebrow{display:flex;align-items:baseline;gap:9px;margin-bottom:18px}
+.eyebrow .n{font-family:var(--display);font-size:28px;line-height:1;color:var(--main);font-weight:400;flex:none}
+.eyebrow h2{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em;word-break:keep-all}
+.opt{font-size:13px;color:var(--muted);font-weight:400}
+.req{font-size:12.5px;color:var(--warn);font-weight:700}
+.choices{display:flex;flex-wrap:wrap;gap:8px}
+.choices label{cursor:pointer}
+.choices input{position:absolute;opacity:0;width:0;height:0}
+.choices span{display:inline-block;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--ground);font-size:14.5px;transition:background .12s,border-color .12s,color .12s}
+.choices input:checked+span{background:var(--main);border-color:var(--main);color:#fff;font-weight:500}
+.choices input:focus-visible+span{outline:2px solid var(--main-deep);outline-offset:2px}
+textarea,input[type=text]{width:100%;font-family:var(--body);font-size:15px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 13px;resize:vertical}
+textarea:focus,input[type=text]:focus{outline:2px solid var(--main);outline-offset:1px;background:var(--ground)}
+textarea{min-height:96px}
+.other{margin-top:8px}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-size:14px}
+.consent input{width:20px;height:20px;accent-color:var(--main);margin-top:2px;flex:none}
+.qd{margin:12px 0 0;font-size:13.5px;color:#33403A;background:var(--surface);border-radius:8px;padding:11px 13px}
+.qd b{display:block;margin-bottom:2px}
+section.miss .eyebrow h2{color:var(--warn)}
+.submit-area{padding-top:30px;border-top:1px solid var(--line)}
+button.send{width:100%;font-family:var(--display);font-weight:400;font-size:20px;color:#fff;background:var(--main);border:0;border-radius:10px;padding:17px;cursor:pointer}
+button.send:disabled{opacity:.6}
+.msg{margin:12px 0 0;font-size:14px;color:var(--warn);text-align:center;font-weight:500;min-height:20px}
+.done{padding-block:56px 40px;text-align:center}
+.done h2{font-family:var(--display);font-size:30px;font-weight:400;margin:0 0 18px}
+.done p{margin:0 0 10px;font-size:15.5px;color:#33403A}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bar"><i id="bar"></i></div>
+<header class="mast"><div class="brand">데일리할랄</div><small>Daily Halal · 할랄 도시락 설문조사</small></header>
+
+<div class="wrap" id="form">
+  <div class="intro">
+    <h1>무슬림 직원 점심, 어떻게 하고 계세요?</h1>
+    <p>2분이면 끝나요. 정확하지 않아도 괜찮아요. 대략 골라 주세요.</p>
+  </div>
+  <div id="qs"></div>
+  <div class="submit-area">
+    <button class="send" id="send" type="button">보내기</button>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<div class="wrap done" id="done" hidden>
+  <h2>고맙습니다!</h2>
+  <p>시식을 원하시면 남겨 주신 연락처로 먼저 연락드릴게요.</p>
+</div>
+
+<script>
+var SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbzCGdIRw_k9-EUL72n3KXlOf5Ha-yl2WDudawnui_LRkN24PXOux8sSHvw772XooiKX/exec";
+
+/* 문항 정본 = customer_calls_20261117/company_survey_draft.md 「설문 문구」 v0.2(15문항, 11-17 사장님 확정) 글자 그대로.
+   답 칸 이름(id) = gas/Code.gs COLUMNS. cond = 10번 「지금은 필요 없다」면 숨기고 비움 */
+var NEED_NOT = "지금은 필요 없다";
+var Q = [
+ {no:1, id:"region", t:"회사는 어디에 있나요?", req:true, type:"radio", o:["부산 강서구","부산 사하구","부산 그 밖의 구","창원","김해","진주","통영","거제","그 밖의 곳"]},
+ {no:2, id:"industry", t:"어떤 일을 하는 회사인가요?", req:true, type:"radio", o:["금속·기계","조선·해양","자동차 부품","식품","물류·창고","그 밖의 일"]},
+ {no:3, id:"staff_total", t:"전체 직원은 몇 분인가요?", req:true, type:"radio", o:["10명 미만","10~29명","30~99명","100~299명","300명 이상"]},
+ {no:4, id:"staff_foreign", t:"그중 외국인 직원은 몇 분인가요?", req:true, type:"radio", o:["없음","1~4명","5~9명","10~19명","20~49명","50명 이상"]},
+ {no:5, id:"staff_muslim", t:"외국인 직원 중 무슬림(이슬람교) 직원은 몇 분인가요?", req:true, type:"radio", o:["없음","1~4명","5~9명","10~19명","20명 이상","잘 모름"]},
+ {no:6, id:"lunch_now", t:"지금 직원 점심은 어떻게 하고 계세요?", req:true, type:"radio", o:["회사 식당(직접 운영)","회사 식당(급식 업체 위탁)","도시락 배달","식대를 드리고 각자 해결","따로 제공하지 않음"]},
+ {no:7, id:"muslim_meal", t:"무슬림 직원분들 식사는 지금 어떻게 하고 계세요?", req:true, type:"radio", o:["할랄 메뉴를 따로 챙긴다","돼지고기만 빼 준다","각자 싸 오거나 사 먹는다","잘 모름","무슬림 직원 없음"]},
+ {no:8, id:"meal_cost", t:"지금 한 끼 식대는 1인당 얼마인가요?", req:true, type:"radio", o:["6천 원 미만","6~7천 원","7~8천 원","8~9천 원","9천~1만 원","1만 원 이상","잘 모름"]},
+ {no:9, id:"box_price", t:"할랄 도시락이 온다면 한 개에 얼마가 적당할까요?", req:true, type:"radio", o:["7천 원 미만","7~8천 원","8~9천 원","9천~1만 원","1만~1만 2천 원","1만 2천 원 이상"]},
+ {no:10, id:"intent", t:"할랄 도시락을 받아 보실 생각이 있으세요?", req:true, type:"radio", o:["꼭 써 보고 싶다","값·조건이 맞으면 검토하겠다",NEED_NOT]},
+ {no:11, id:"when", t:"받는다면 언제가 좋을까요? (여러 개 고르기)", req:true, cond:true, type:"check", o:["매일 점심","일주일에 몇 번","야근 저녁","회사 행사·명절 때만","아직 모름"]},
+ {no:12, id:"daily_qty", t:"받는다면 하루 몇 개쯤일까요?", req:true, cond:true, type:"radio", o:["1~4개","5~9개","10~19개","20~49개","50개 이상"]},
+ {no:13, id:"tasting", t:"시식용 도시락을 먼저 받아 보시겠어요?", type:"radio", o:["네, 받아 볼게요","아니요"]},
+ {no:14, id:"contact", t:"연락받으실 곳 (시식·견적을 원하실 때만)", type:"contact"},
+ {no:15, id:"memo", t:"그 밖에 하실 말씀", type:"text"}
+];
+var PRIVACY = "<b>개인정보 수집·이용 안내</b>수집 항목: 회사 이름, 담당자 성함, 전화 또는 메일 · 수집 목적: 시식·견적 연락 · 보유 기간: 수집일부터 3개월 보관 후 삭제합니다. 적지 않으셔도 설문에 참여하실 수 있습니다.";
+
+var A = {};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function optHTML(q, v, kind){
+  return '<label><input type="'+kind+'" name="'+q.id+'" value="'+esc(v)+'"><span>'+esc(v)+'</span></label>';
+}
+function render(){
+  var h = [];
+  Q.forEach(function(q){
+    h.push('<section data-q="'+q.id+'"><div class="eyebrow"><span class="n">'+q.no+'</span><h2>'+esc(q.t)+' <span class="'+(q.req?'req':'opt')+'">· '+(q.req?'필수':'선택')+'</span></h2></div>');
+    if(q.type==="radio"||q.type==="check"){
+      var kind = q.type==="radio"?"radio":"checkbox";
+      h.push('<div class="choices">'); q.o.forEach(function(v){h.push(optHTML(q,v,kind));}); h.push('</div>');
+    }else if(q.type==="text"){
+      h.push('<textarea name="'+q.id+'" placeholder="자유롭게 쓰기"></textarea>');
+    }else if(q.type==="contact"){
+      h.push('<input type="text" name="company" placeholder="회사 이름">');
+      h.push('<input type="text" name="person" class="other" placeholder="담당자 성함">');
+      h.push('<input type="text" name="contact" class="other" placeholder="전화 또는 메일">');
+      h.push('<p class="qd">'+PRIVACY+'</p>');
+      h.push('<label class="consent"><input type="checkbox" name="consent" value="동의"><span>개인정보 수집·이용에 동의합니다</span></label>');
+    }
+    h.push('</section>');
+  });
+  document.getElementById("qs").innerHTML = h.join("");
+}
+render();
+var qs = document.getElementById("qs");
+
+function skipCond(){
+  var off = (qs.querySelector('input[name=intent]:checked')||{}).value === NEED_NOT;
+  Q.forEach(function(q){
+    if(!q.cond) return;
+    var sec = qs.querySelector('section[data-q="'+q.id+'"]');
+    sec.hidden = off;
+    if(off) [].forEach.call(sec.querySelectorAll('input'), function(i){ i.checked = false; });
+  });
+}
+function visible(q){ return !qs.querySelector('section[data-q="'+q.id+'"]').hidden; }
+
+function collect(){
+  skipCond();
+  A = {};
+  Q.forEach(function(q){
+    if(!visible(q)) return;
+    if(q.type==="contact"){
+      ["company","person","contact"].forEach(function(k){ var v = qs.querySelector('[name='+k+']').value.trim(); if(v) A[k]=v; });
+      if(qs.querySelector('[name=consent]').checked) A.consent="동의";
+    }else if(q.type==="text"){
+      var t = qs.querySelector('[name="'+q.id+'"]').value.trim(); if(t) A[q.id]=t;
+    }else{
+      var vals = [].map.call(qs.querySelectorAll('input[name="'+q.id+'"]:checked'), function(i){return i.value;});
+      if(vals.length) A[q.id] = q.type==="check"? vals : vals[0];
+    }
+  });
+  var vis = Q.filter(visible), done = vis.filter(function(q){
+    return q.type==="contact" ? (A.company||A.person||A.contact) : A[q.id]!==undefined;
+  }).length;
+  document.getElementById("bar").style.width = Math.round(done/vis.length*100)+"%";
+}
+qs.addEventListener("change", function(e){
+  var sec = e.target.closest("section"); if(sec) sec.classList.remove("miss");
+  collect();
+});
+qs.addEventListener("input", collect);
+
+function flash(t){var m=document.getElementById("msg");m.textContent=t;setTimeout(function(){if(m.textContent===t)m.textContent="";},3500);}
+
+document.getElementById("send").addEventListener("click", function(){
+  collect();
+  var miss = Q.filter(function(q){ return q.req && visible(q) && A[q.id]===undefined; });
+  [].forEach.call(qs.querySelectorAll("section.miss"), function(s){ s.classList.remove("miss"); });
+  if(miss.length){
+    miss.forEach(function(q){ qs.querySelector('section[data-q="'+q.id+'"]').classList.add("miss"); });
+    qs.querySelector('section[data-q="'+miss[0].id+'"]').scrollIntoView({behavior:"smooth", block:"start"});
+    flash(miss.map(function(q){return q.no+"번";}).join(", ")+"에 답해 주세요");
+    return;
+  }
+  /* 개인정보 동의가 없으면 14번(연락받으실 곳)은 비워서 저장 */
+  if(!A.consent){ delete A.company; delete A.person; delete A.contact; }
+  var btn = this; btn.disabled = true; btn.textContent = "보내는 중…";
+  var payload = {submitted_at: new Date().toISOString(), answers: A, ua: navigator.userAgent.slice(0,120)};
+  function done(){ document.getElementById("form").hidden = true; document.getElementById("done").hidden = false; window.scrollTo(0,0); }
+  function fail(){ btn.disabled = false; btn.textContent = "보내기"; flash("보내지 못했어요. 잠시 뒤 다시 눌러 주세요"); }
+  if(!SUBMIT_ENDPOINT){ console.log("[preview]", JSON.stringify(payload)); done(); return; }
+  fetch(SUBMIT_ENDPOINT, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload)})
+    .then(function(r){return r.json();}).then(function(j){ j && j.ok ? done() : fail(); }).catch(fail);
+});
+collect();
+</script>
+</body>
+</html>
